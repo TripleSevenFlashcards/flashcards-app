@@ -10,8 +10,8 @@
 </head>
 <body>
   <div id="app" class="app">
-    <!-- Sidebar (kept for large screens; auto-hidden on anything under 1024px) -->
-    <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+    <!-- Sidebar (hidden on small screens, visible on tablet/desktop) -->
+    <aside class="sidebar" id="sidebar">
       <div class="logo-row">
         <img src="/static/logo.jpg" alt="Logo" class="logo">
         <div class="brand">
@@ -36,34 +36,23 @@
     </aside>
 
     <!-- Main -->
-    <main class="main" role="main">
-      <!-- Top bar with hamburger ALWAYS visible (all widths) -->
+    <main class="main">
+      <!-- Top bar (always visible, provides mobile controls) -->
       <header class="topbar">
-        <button id="menuToggle" class="btn-icon" aria-label="Open menu" aria-controls="navDrawer" aria-expanded="false">
-          <span class="hamburger" aria-hidden="true"></span>
-        </button>
-
-        <div class="brand-inline">
-          <strong>TripleSeven</strong><span class="muted"> • Flashcards</span>
-        </div>
-
+        <button id="catToggle" class="btn-outline">Categories</button>
         <div class="spacer"></div>
         <input id="searchTop" class="search compact" type="search" placeholder="Search…">
       </header>
 
-      <!-- Left side drawer for mobile/tablet/landscape phones -->
-      <div id="navDrawer" class="side-drawer" aria-hidden="true">
-        <div class="side-drawer-panel" role="dialog" aria-modal="true" aria-label="Menu">
-          <div class="drawer-head">
-            <div class="drawer-title">Categories</div>
-            <button id="drawerClose" class="btn-text" aria-label="Close menu">Close</button>
+      <!-- Mobile category drawer -->
+      <div id="catDrawer" class="drawer" aria-hidden="true">
+        <div class="drawer-panel" role="dialog" aria-modal="true" aria-label="Categories">
+          <div class="drawer-grip"></div>
+          <div class="drawer-header">
+            <div class="section-title">Categories</div>
+            <button id="drawerClose" class="btn-text">Close</button>
           </div>
           <div id="categoryListMobile" class="categories"></div>
-
-          <div class="drawer-section">
-            <div class="section-title">Search</div>
-            <input id="searchDrawer" class="search" type="search" placeholder="Search terms…">
-          </div>
         </div>
       </div>
 

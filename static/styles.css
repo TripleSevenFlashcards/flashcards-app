@@ -34,12 +34,12 @@ body{
 /* Layout */
 .app{
   display:grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 280px 1fr;
   gap: var(--gap);
   min-height:100vh;
 }
 
-/* Sidebar (only visible on wide screens) */
+/* Sidebar (desktop/tablet) */
 .sidebar{
   border-right:1px solid var(--line);
   padding: var(--pad);
@@ -72,36 +72,24 @@ body{
   width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:transparent; color:var(--fg);
 }
 .search::placeholder{ color:var(--muted); }
-.search.compact{ max-width: 360px; }
+.search.compact{ max-width: 280px; }
 
 /* Main area */
 .main{ display:flex; flex-direction:column; padding: var(--pad); gap: var(--gap); }
 
-/* Topbar */
 .topbar{
-  position: sticky; top:0; z-index: 40;
-  display:flex; align-items:center; gap:10px;
+  position: sticky; top:0; z-index: 20;
+  display:flex; align-items:center; gap:8px;
   background:var(--bg);
   border-bottom:1px solid var(--line);
-  padding: var(--pad-sm) 0;
+  padding: var(--pad-sm) 0 var(--pad-sm) 0;
 }
 .spacer{ flex:1; }
-.muted{ color: var(--muted); }
 
-.btn-icon{
+.btn-outline{
   appearance:none; background:transparent; color:var(--fg);
-  border:1px solid var(--line); border-radius:12px; padding:8px 10px; cursor:pointer;
-  display:inline-flex; align-items:center; justify-content:center;
+  border:1px solid var(--line); border-radius:999px; padding:8px 12px; cursor:pointer;
 }
-.hamburger{
-  position:relative; width:22px; height:2px; background:currentColor; display:block;
-}
-.hamburger::before, .hamburger::after{
-  content:""; position:absolute; left:0; width:22px; height:2px; background:currentColor;
-}
-.hamburger::before{ top:-6px; }
-.hamburger::after{ top:6px; }
-
 .btn-text{
   appearance:none; background:transparent; color:var(--brand);
   border:0; padding:6px 8px; cursor:pointer; font-weight:600;
@@ -120,9 +108,8 @@ body{
   box-shadow: var(--shadow);
   padding: 16px;
   display:flex; flex-direction:column; gap:10px;
-  min-width: 0;
 }
-.card .q{ font-weight:600; word-wrap:break-word; overflow-wrap:anywhere; }
+.card .q{ font-weight:600; }
 .card .meta{ color:var(--muted); font-size:12px; display:flex; gap:8px; flex-wrap:wrap; }
 .card .a{ border-top:1px dashed var(--line); padding-top:10px; }
 
@@ -130,45 +117,34 @@ body{
 .empty{ display:grid; place-items:center; height: 30vh; color:var(--muted); }
 .hidden{ display:none !important; }
 
-/* SIDE DRAWER (hamburger) */
-.side-drawer{
-  position: fixed; inset:0; z-index:50; pointer-events:none;
+/* Drawer for mobile categories */
+.drawer{
+  position: fixed; inset:0; background: rgba(0,0,0,.4);
+  display:none;
 }
-.side-drawer::before{
-  content:""; position:absolute; inset:0; background:rgba(0,0,0,.45); opacity:0; transition: opacity .18s ease;
+.drawer.open{ display:block; }
+.drawer-panel{
+  position:absolute; left:0; right:0; bottom:0;
+  max-height: 70vh; background: var(--bg);
+  border-top-left-radius: 18px; border-top-right-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 8px var(--pad) var(--pad);
+  display:flex; flex-direction:column; gap:10px;
 }
-.side-drawer[aria-hidden="false"]{ pointer-events:auto; }
-.side-drawer[aria-hidden="false"]::before{ opacity:1; }
+.drawer-grip{ width:50px; height:5px; background:var(--line); border-radius:999px; margin:6px auto 4px; }
+.drawer-header{ display:flex; align-items:center; justify-content:space-between; }
 
-.side-drawer-panel{
-  position:absolute; top:0; bottom:0; left:0; width: 86vw; max-width: 360px;
-  background: var(--bg); border-right:1px solid var(--line);
-  box-shadow: var(--shadow); transform: translateX(-100%);
-  transition: transform .18s ease;
-  padding: var(--pad);
-  display:flex; flex-direction:column; gap:12px; overflow:auto;
-}
-.side-drawer[aria-hidden="false"] .side-drawer-panel{ transform: translateX(0); }
-
-.drawer-head{ display:flex; align-items:center; justify-content:space-between; }
-.drawer-title{ font-weight:700; }
-.drawer-section{ border-top:1px solid var(--line); padding-top:10px; }
-
-/* RESPONSIVE: aggressively hide sidebar under 1024px to prevent cramped layouts */
-@media (max-width: 1024px){
-  .app{ grid-template-columns: 1fr; }
-  .sidebar{ display:none; }
+/* Responsive rules */
+@media (max-width: 980px){
   .cards{ grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
-
-/* Narrow phones & landscape phones */
-@media (max-width: 700px){
+@media (max-width: 640px){
+  .app{ grid-template-columns: 1fr; }
+  .sidebar{ display:none; }
   .cards{ grid-template-columns: 1fr; }
-  .search.compact{ max-width: 220px; }
+  .search.compact{ max-width: 100%; }
+  .categories{ grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; }
 }
-
-/* Very narrow (SE/classic landscape) */
-@media (max-width: 580px){
-  .topbar{ gap:8px; }
-  .search.compact{ max-width: 160px; }
+@media (max-width: 380px){
+  .categories{ grid-template-columns: 1fr; }
 }
