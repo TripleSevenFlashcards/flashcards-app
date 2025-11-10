@@ -1,20 +1,23 @@
 ;(function(){
-  const q = (s, el=document) => el.querySelector(s)
+  const q  = (s, el=document) => el.querySelector(s)
   const qa = (s, el=document) => Array.from(el.querySelectorAll(s))
 
   // Elements
-  const cardsEl = q('#cards')
-  const emptyEl = q('#empty')
-  const metaCountsEl = q('#metaCounts')
+  const cardsEl       = q('#cards')
+  const emptyEl       = q('#empty')
+  const metaCountsEl  = q('#metaCounts')
 
-  const sidebarList = q('#categoryList')
-  const mobileList  = q('#categoryListMobile')
-  const catToggle   = q('#catToggle')
-  const catDrawer   = q('#catDrawer')
-  const drawerClose = q('#drawerClose')
+  const sidebarList   = q('#categoryList')
+  const mobileList    = q('#categoryListMobile')
 
   const searchSidebar = q('#searchInput')
   const searchTop     = q('#searchTop')
+  const searchDrawer  = q('#searchDrawer')
+
+  // Drawer controls (hamburger)
+  const navDrawer     = q('#navDrawer')
+  const menuToggle    = q('#menuToggle')
+  const drawerClose   = q('#drawerClose')
 
   // State
   let allCards = []
@@ -22,46 +25,62 @@
   let activeCategory = null
   let searchTerm = ''
 
-  // UX helpers
-  function openDrawer(){ catDrawer.classList.add('open'); catDrawer.setAttribute('aria-hidden','false') }
-  function closeDrawer(){ catDrawer.classList.remove('open'); catDrawer.setAttribute('aria-hidden','true') }
-
-  catToggle.addEventListener('click', openDrawer)
+  // Drawer handlers
+  function openDrawer(){
+    navDrawer.setAttribute('aria-hidden','false')
+    menuToggle.setAttribute('aria-expanded','true')
+  }
+  function closeDrawer(){
+    navDrawer.setAttribute('aria-hidden','true')
+    menuToggle.setAttribute('aria-expanded','false')
+  }
+  menuToggle.addEventListener('click', openDrawer)
   drawerClose.addEventListener('click', closeDrawer)
-  catDrawer.addEventListener('click', (e) => {
-    if(e.target === catDrawer){ closeDrawer() }
-  })
+  navDrawer.addEventListener('click', (e) => { if(e.target === navDrawer) closeDrawer() })
+  // ESC to close
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeDrawer() })
 
-  ;[searchSidebar, searchTop].forEach(inp => {
+  ;[searchSidebar, searchTop, searchDrawer].forEach(inp => {
     if(!inp) return
     inp.addEventListener('input', (e) => {
       searchTerm = String(e.target.value || '').trim().toLowerCase()
+      // Sync search boxes so user sees consistent state
+      ;[searchSidebar, searchTop, searchDrawer].forEach(x => { if(x && x !== e.target) x.value = e.target.value })
       render()
     })
   })
 
   function categoryButton(cat){
+    const label = cat || 'Uncategorized'
     const btn = document.createElement('button')
-    btn.className = 'category' + (activeCategory === cat ? ' active' : '')
+    btn.className = 'category'
     btn.type = 'button'
-    btn.innerHTML = `
-      <div>${cat || 'Uncategorized'}</div>
-    `
+    btn.textContent = label
     btn.addEventListener('click', () => {
       activeCategory = (activeCategory === cat) ? null : cat
       render()
-      // Close the drawer if on mobile
       closeDrawer()
     })
     return btn
   }
 
   function buildCategoriesUI(){
-    sidebarList.innerHTML = ''
-    mobileList.innerHTML = ''
+    sidebarList && (sidebarList.innerHTML = '')
+    mobileList && (mobileList.innerHTML = '')
     categories.forEach(cat => {
-      sidebarList.appendChild(categoryButton(cat))
-      mobileList.appendChild(categoryButton(cat))
+      const a = categoryButton(cat)
+      const b = categoryButton(cat)
+      sidebarList && sidebarList.appendChild(a)
+      mobileList && mobileList.appendChild(b)
+    })
+    reflectActiveButtons()
+  }
+
+  function reflectActiveButtons(){
+    qa('.category').forEach(btn => {
+      const label = btn.textContent.trim()
+      const isActive = label === (activeCategory || 'Uncategorized')
+      btn.classList.toggle('active', isActive)
     })
   }
 
@@ -104,17 +123,13 @@
       cardsEl.appendChild(frag)
     }
     updateCounts()
-    // Update active state on buttons
-    qa('.category').forEach(btn => {
-      const label = btn.textContent.trim()
-      btn.classList.toggle('active', label === (activeCategory || 'Uncategorized'))
-    })
+    reflectActiveButtons()
   }
 
   function updateCounts(){
     const total = allCards.length
     const shown = filterCards().length
-    metaCountsEl.textContent = `${shown} / ${total} cards`
+    if(metaCountsEl) metaCountsEl.textContent = `${shown} / ${total} cards`
   }
 
   function escapeHTML(s){
@@ -124,9 +139,7 @@
   function formatAnswer(a){
     if(a == null) return ''
     const s = String(a)
-    // Basic formatting: support fenced code blocks and line breaks
     if(s.includes('```')){
-      // naive split for display
       return s.split('```').map((chunk, i) => i % 2 ? `<pre><code>${escapeHTML(chunk)}</code></pre>` : `<p>${escapeHTML(chunk)}</p>`).join('')
     }
     return s.split('\n').map(line => `<p>${escapeHTML(line)}</p>`).join('')
@@ -140,7 +153,7 @@
 
   async function boot(){
     try{
-      // Try API first; fall back to static if available
+      // Prefer API; gracefully fall back to static JSON if present
       const [cards, cats] = await Promise.allSettled([
         fetchJSON('/api/cards'),
         fetchJSON('/api/categories')
@@ -149,18 +162,16 @@
       if(cards.status === 'fulfilled'){
         allCards = normalizeCards(cards.value)
       }else{
-        // fallback: try static JSON
         try{
           allCards = normalizeCards(await fetchJSON('/static/cards.json'))
         }catch(_){ allCards = [] }
       }
 
       if(cats.status === 'fulfilled'){
-        categories = cats.value
+        categories = dedupeSort(cats.value)
       }else{
-        // derive from cards
-        const set = new Set(allCards.map(c => String(c.category || '').trim()))
-        categories = Array.from(set).sort()
+        const set = new Set(allCards.map(c => (c.category || '').trim()))
+        categories = dedupeSort(Array.from(set))
       }
 
       buildCategoriesUI()
@@ -178,6 +189,12 @@
       category: c.category ?? '',
       tags: c.tags ?? []
     }))
+  }
+
+  function dedupeSort(arr){
+    const a = Array.from(new Set([].concat(arr || []).map(s => String(s || '').trim())))
+    a.sort((x, y) => x.localeCompare(y, undefined, { sensitivity: 'base' }))
+    return a
   }
 
   boot()

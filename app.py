@@ -1,182 +1,212 @@
-# app.py — Serve your exact HTML + /logo.jpg + /cards/** (Flask 3.1+)
-import os, json, sqlite3, uuid, hashlib
-from datetime import datetime
+import os
+import json
+import sqlite3
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-from flask import Flask, request, jsonify, send_from_directory, g, redirect, abort, make_response
+from typing import Dict, List, Optional, Tuple
 
-ROOT       = Path(__file__).resolve().parent
-STATIC_DIR = ROOT / "static"
-CARDS_DIR  = STATIC_DIR / "cards"
-DATA_DIR   = ROOT / "data"
-CARDS_JSON = DATA_DIR / "cards.json"
-DB_PATH    = os.environ.get("DB_PATH", str(ROOT / "app.db"))
-BUILD_ID   = os.environ.get("BUILD_ID", str(uuid.uuid4())[:8])
+from flask import Flask, jsonify, send_from_directory, request, make_response
 
-app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="/static")
+# -----------------------------------------------------------------------------
+# Config
+# -----------------------------------------------------------------------------
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "app.db"))  # override via env if needed
 
-# --- Bootstrap
-STATIC_DIR.mkdir(parents=True, exist_ok=True)
-CARDS_DIR.mkdir(parents=True, exist_ok=True)
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+# Try loading .env if python-dotenv is available; otherwise ignore.
+try:
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv()
+    DB_PATH = os.getenv("DB_PATH", DB_PATH)
+except Exception:
+    pass
 
-def _nocache(resp):
-    resp.cache_control.no_store = True
-    resp.cache_control.max_age = 0
+app = Flask(
+    __name__,
+    static_folder=str(STATIC_DIR),
+    static_url_path="/static"
+)
+
+# -----------------------------------------------------------------------------
+# Data access
+# -----------------------------------------------------------------------------
+CARD_COL_CANDIDATES = {
+    "question": {"question", "q", "front", "prompt"},
+    "answer": {"answer", "a", "back", "response"},
+    "category": {"category", "cat", "section", "topic"},
+    "tags": {"tags", "tag", "keywords"},
+}
+
+def _connect() -> Optional[sqlite3.Connection]:
+    if not DB_PATH or not Path(DB_PATH).exists():
+        return None
+    try:
+        con = sqlite3.connect(DB_PATH)
+        con.row_factory = sqlite3.Row
+        return con
+    except Exception:
+        return None
+
+def _table_and_mapping(con: sqlite3.Connection) -> Optional[Tuple[str, Dict[str, str]]]:
+    """
+    Find a table that looks like a flashcards table by checking for likely columns.
+    Returns (table_name, column_map), where column_map maps canonical keys
+    ('question','answer','category','tags') to actual column names in the table.
+    """
+    cur = con.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = [r[0] for r in cur.fetchall()]
+    for t in tables:
+        try:
+            cur.execute(f"PRAGMA table_info('{t}')")
+            cols = [row[1] for row in cur.fetchall()]
+            lower_cols = {c.lower(): c for c in cols}  # map lowercase -> original case
+            colmap: Dict[str, str] = {}
+            ok = True
+            # Require at least question + answer
+            for key in ("question", "answer", "category", "tags"):
+                found = None
+                for candidate in CARD_COL_CANDIDATES[key]:
+                    if candidate in lower_cols:
+                        found = lower_cols[candidate]
+                        break
+                if key in ("question", "answer") and not found:
+                    ok = False
+                    break
+                if found:
+                    colmap[key] = found
+            if ok:
+                return t, colmap
+        except Exception:
+            continue
+    return None
+
+def load_cards_from_db() -> Optional[List[Dict]]:
+    con = _connect()
+    if not con:
+        return None
+    try:
+        probe = _table_and_mapping(con)
+        if not probe:
+            return None
+        table, cmap = probe
+
+        # Build SELECT with available columns; missing fields become NULL
+        select_parts = []
+        select_parts.append(f"{cmap['question']} AS question")
+        select_parts.append(f"{cmap['answer']} AS answer")
+        if "category" in cmap:
+            select_parts.append(f"{cmap['category']} AS category")
+        else:
+            select_parts.append("NULL AS category")
+        if "tags" in cmap:
+            select_parts.append(f"{cmap['tags']} AS tags")
+        else:
+            select_parts.append("NULL AS tags")
+
+        sql = f"SELECT {', '.join(select_parts)} FROM '{table}'"
+        rows = con.execute(sql).fetchall()
+
+        out: List[Dict] = []
+        for r in rows:
+            q = (r["question"] or "").strip()
+            a = (r["answer"] or "").strip()
+            cat = (r["category"] or "").strip() if "category" in r.keys() else ""
+            raw_tags = r["tags"] if "tags" in r.keys() else None
+
+            tags: List[str] = []
+            if isinstance(raw_tags, str) and raw_tags.strip():
+                # split on comma/semicolon
+                parts = [p.strip() for p in raw_tags.replace(";", ",").split(",")]
+                tags = [p for p in parts if p]
+
+            out.append({
+                "question": q,
+                "answer": a,
+                "category": cat,
+                "tags": tags
+            })
+        return out
+    except Exception:
+        return None
+    finally:
+        try:
+            con.close()
+        except Exception:
+            pass
+
+def load_cards_from_json() -> Optional[List[Dict]]:
+    json_path = STATIC_DIR / "cards.json"
+    if not json_path.exists():
+        return None
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        out: List[Dict] = []
+        for c in data if isinstance(data, list) else []:
+            out.append({
+                "question": str(c.get("question") or c.get("q") or "").strip(),
+                "answer": str(c.get("answer") or c.get("a") or "").strip(),
+                "category": str(c.get("category") or "").strip(),
+                "tags": c.get("tags") or []
+            })
+        return out
+    except Exception:
+        return None
+
+def load_cards() -> List[Dict]:
+    # Priority: DB -> static/cards.json -> empty
+    cards = load_cards_from_db()
+    if cards is None:
+        cards = load_cards_from_json()
+    return cards or []
+
+# -----------------------------------------------------------------------------
+# Routes
+# -----------------------------------------------------------------------------
+@app.after_request
+def add_no_cache_headers(resp):
+    # Ensure fresh data while iterating; adjust as needed.
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp.headers["Pragma"] = "no-cache"
     resp.headers["Expires"] = "0"
     return resp
 
-@app.before_request
-def _log_req():
-    print(f"[{BUILD_ID}] {request.method} {request.path} "
-          f"Accept={request.headers.get('Accept','')} "
-          f"Sec-Fetch-Mode={request.headers.get('Sec-Fetch-Mode','')}")
-
-# --- Minimal DB/state support (unused by your HTML, but harmless & available)
-def get_db():
-    if "db" not in g:
-        g.db = sqlite3.connect(DB_PATH)
-        g.db.row_factory = sqlite3.Row
-    return g.db
-
-@app.teardown_appcontext
-def close_db(exc):
-    db = g.pop("db", None)
-    if db is not None:
-        db.close()
-
-def init_db():
-    db = get_db()
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS user_state (
-            user_id TEXT PRIMARY KEY,
-            state_json TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )
-    """)
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS hidden_cards (
-            user_id TEXT NOT NULL,
-            card_id INTEGER NOT NULL,
-            PRIMARY KEY (user_id, card_id)
-        )
-    """)
-    db.commit()
-
-with app.app_context():
-    init_db()
-
-# --- Cards loader
-_cards_cache: Optional[List[Dict[str, Any]]] = None
-def load_cards() -> List[Dict[str, Any]]:
-    global _cards_cache
-    if _cards_cache is not None:
-        return _cards_cache
-    if not CARDS_JSON.exists():
-        _cards_cache = [{
-            "id": 999, "category": "Demo", "question": "Demo Q",
-            "image": "/cards/demo_front.jpg", "answer": "Demo A",
-            "answer_image": "/cards/demo_back.jpg", "url": ""
-        }]
-        return _cards_cache
-    with CARDS_JSON.open("r", encoding="utf-8") as f:
-        data = json.load(f)
-    if not isinstance(data, list):
-        raise ValueError("cards.json must be a list")
-    for c in data:
-        c.setdefault("id", None)
-        c.setdefault("category", "")
-        c.setdefault("question", "")
-        c.setdefault("image", "")
-        c.setdefault("answer", "")
-        c.setdefault("answer_image", "")
-        c.setdefault("url", "")
-    _cards_cache = data
-    return _cards_cache
-
-# --- Routes to serve your assets exactly as referenced by your HTML
-@app.route("/logo.jpg")
-def serve_logo():
-    # Your HTML uses /logo.jpg at the root; serve static/logo.jpg here.
-    path = STATIC_DIR / "logo.jpg"
-    if not path.exists():
-        abort(404)
-    return send_from_directory(str(STATIC_DIR), "logo.jpg")
-
-@app.route("/cards/<path:filename>")
-def serve_card_file(filename):
-    file_path = CARDS_DIR / filename
-    if not file_path.exists() or not file_path.is_file():
-        abort(404)
-    return send_from_directory(str(CARDS_DIR), filename)
-
-# --- UI (shell HTML) with no-cache so updates show immediately
 @app.route("/")
 def index():
-    resp = make_response(send_from_directory(app.static_folder, "index.html"))
-    return _nocache(resp)
+    # Serve the static SPA shell
+    return send_from_directory(app.static_folder, "index.html")
 
-@app.route("/index.html")
-def index_html():
-    return redirect("/")
+@app.route("/health")
+def health():
+    return jsonify({"ok": True})
 
-# SPA fallback for any non-API path
-@app.route("/<path:maybe_client_route>")
-def spa_fallback(maybe_client_route):
-    if not maybe_client_route.startswith("api/"):
-        resp = make_response(send_from_directory(app.static_folder, "index.html"))
-        return _nocache(resp)
-    return jsonify({"error": "Not found"}), 404
-
-# --- API (your HTML uses only /api/cards)
-@app.route("/api/cards", methods=["GET"])
-def api_get_cards():
-    # If someone navigates here in the address bar, bounce back to UI.
-    if request.headers.get("Sec-Fetch-Mode", "") == "navigate":
-        return redirect("/", code=302)
-
+@app.route("/api/cards")
+def api_cards():
     cards = load_cards()
-    categories_param = request.args.get("categories", "").strip()
-    if categories_param:
-        wanted = {c for c in categories_param.split(",") if c}
-        cards = [c for c in cards if str(c.get("category","")).strip() in wanted]
     return jsonify(cards)
 
-# Optional endpoints left in place (unused by your HTML)
-@app.route("/api/state", methods=["GET"])
-def api_get_state():
-    return jsonify({"current_index":0,"correct":0,"incorrect":0,"seen":0,"deck_order":[],"category_filters":[]})
-
-@app.route("/api/state", methods=["POST"])
-def api_set_state():
-    return jsonify({"ok": True})
-
-@app.route("/api/restart", methods=["POST"])
-def api_restart():
-    return jsonify({"ok": True})
-
-@app.route("/api/hide", methods=["POST"])
-def api_hide():
-    return jsonify({"ok": True})
-
-@app.route("/api/unhide_all", methods=["POST"])
-def api_unhide_all():
-    return jsonify({"ok": True})
-
-@app.route("/api/categories", methods=["GET"])
+@app.route("/api/categories")
 def api_categories():
     cards = load_cards()
-    cats = sorted({str(c.get("category", "")).strip() for c in cards if str(c.get("category", "")).strip()})
+    cats = sorted({(c.get("category") or "").strip() for c in cards if (c.get("category") or "").strip()})
     return jsonify(cats)
 
-# --- Entrypoint
+# Optional: serve other top-level routes to index.html if needed for SPA routing.
+@app.errorhandler(404)
+def not_found(e):
+    # If the path looks like a file, keep 404. Otherwise, serve index for SPA routes.
+    p = request.path
+    if "." in p.split("/")[-1]:
+        return e
+    try:
+        return send_from_directory(app.static_folder, "index.html")
+    except Exception:
+        return e
+
+# -----------------------------------------------------------------------------
+# Entry
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    host = os.environ.get("FLASK_HOST", "127.0.0.1")
-    port = int(os.environ.get("FLASK_PORT", "5000"))
-    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
-    print(f"[{BUILD_ID}] UI:    http://{host}:{port}/")
-    print(f"[{BUILD_ID}] API:   http://{host}:{port}/api")
-    print(f"[{BUILD_ID}] Files: http://{host}:{port}/cards/<file>  -> {CARDS_DIR}")
-    print(f"[{BUILD_ID}] Logo:  http://{host}:{port}/logo.jpg      -> {STATIC_DIR/'logo.jpg'}")
-    app.run(host=host, port=port, debug=debug)
+    port = int(os.getenv("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port, debug=os.getenv("FLASK_DEBUG", "0") == "1")
