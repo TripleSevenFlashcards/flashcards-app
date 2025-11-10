@@ -1,71 +1,397 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8" />
-  <title>TripleSeven Flashcards</title>
+  <title>Flashcards</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light dark" />
-  <link rel="preload" href="/static/styles.css" as="style">
-  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    :root{
+      --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
+      --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1a3f80 0%, transparent 60%), linear-gradient(135deg,var(--bg1),var(--bg2));
+      color:#fff; display:flex; flex-direction:column; align-items:center;
+    }
+
+    /* Tight top bar */
+    .topbar{width:100%; max-width:1100px; display:flex; align-items:center; gap:10px; padding:12px 16px;}
+    .logo{height:36px}
+    .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
+
+    /* Grid */
+    .wrap{
+      width:100%; max-width:1100px;
+      display:grid; grid-template-columns: 280px 1fr; gap:14px;
+      padding:0 16px 16px;
+    }
+
+    .panel{
+      background:var(--panel); color:var(--text);
+      border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+      max-height: calc(100vh - 140px);
+      overflow:auto;
+      /* no black outline on panels */
+      border: none;
+    }
+
+    .left{padding:12px; display:flex; flex-direction:column;}
+    .right{padding:16px; min-height:320px; display:flex; flex-direction:column;}
+
+    .muted{color:var(--muted); font-size:13px}
+    .sectionTitle{font-weight:700; margin:6px 0 10px}
+
+    .catlist{display:flex; flex-direction:column; gap:4px; max-height:40vh; overflow:auto; padding-right:6px}
+    .checkboxline{display:flex; gap:6px; align-items:center}
+    .checkboxline span{font-size:13px; line-height:1.15}
+
+    .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
+    .chip{
+      background:#eef3ff; color:#0b2c5a;
+      border:1px solid #cfe0ff;               /* light outline */
+      border-radius:999px; padding:6px 10px; font-size:12px
+    }
+
+    /* Buttons: slightly smaller & narrower, ALL with black outline */
+    .btnrow{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
+      cursor:pointer; text-transform:capitalize; border:2px solid #000; /* black outline */
+    }
+    button.primary{background:var(--accent); color:#fff;}
+    button.primary:hover{filter:brightness(0.95);}
+    button.ok{background:var(--ok); color:#fff;}
+    button.ok:hover{filter:brightness(0.95);}
+    button.bad{background:#ffcccc; color:#000;}
+    button.bad:hover{background:#b02a37; color:#fff;}
+    button.next{background:var(--next); color:#fff;}
+    button.next:hover{filter:brightness(0.9);}
+    button.restart{background:#b02a37; color:#fff;}
+    button.restart:hover{filter:brightness(0.9);}
+    button.unhide{background:#1b8a3a; color:#fff;}
+    button.unhide:hover{filter:brightness(0.9);}
+    /* Hide Card: requested #435663 with black outline */
+    button.hidecard{background:#435663; color:#fff;}
+
+    #card{
+      flex:1;
+      border:1px solid #e3e8ef;              /* restore light border */
+      border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
+    }
+    .q{font-size:20px; font-weight:700}
+
+    /* Image boxes with light outline */
+    .imgbox{
+      width:6in; height:auto; max-width:100%;
+      background:#f6f8fb; border:1px solid #d9e1ee; /* light border */
+      border-radius:10px; display:none; overflow:hidden; margin-top:8px;
+    }
+    .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
+
+    .a{
+      display:none; color:#1d2630; background:#f6f8fb;
+      border:1px dashed #d9e1ee;             /* light dashed border */
+      border-radius:10px; padding:14px; white-space:pre-wrap
+    }
+
+    .small{font-size:12px}
+    .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
+    .linkrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .extlink{
+      display:inline-flex; align-items:center; gap:6px;
+      background:#e8f1ff; color:#0b2c5a;
+      border:1px solid #cfe0ff;               /* light outline */
+      border-radius:8px; padding:6px 10px;
+      text-decoration:none; font-weight:600;
+    }
+    .extlink:hover{background:#dceaff}
+    .answrap{display:none; flex-direction:column; gap:10px;}
+    .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
+    .hidebtn:hover{filter:brightness(0.95);}
+
+    /* Bottom controls layout */
+    .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
+    .grow{flex:1;}
+  </style>
 </head>
 <body>
-  <div id="app" class="app">
-    <!-- Sidebar (hidden on small screens, visible on tablet/desktop) -->
-    <aside class="sidebar" id="sidebar">
-      <div class="logo-row">
-        <img src="/static/logo.jpg" alt="Logo" class="logo">
-        <div class="brand">
-          <div class="title">TripleSeven</div>
-          <div class="subtitle">Flashcards</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Categories</div>
-        <div id="categoryList" class="categories"></div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Search</div>
-        <input id="searchInput" class="search" type="search" placeholder="Search terms…">
-      </div>
-
-      <div class="section meta">
-        <div id="metaCounts"></div>
-      </div>
-    </aside>
-
-    <!-- Main -->
-    <main class="main">
-      <!-- Top bar (always visible, provides mobile controls) -->
-      <header class="topbar">
-        <button id="catToggle" class="btn-outline">Categories</button>
-        <div class="spacer"></div>
-        <input id="searchTop" class="search compact" type="search" placeholder="Search…">
-      </header>
-
-      <!-- Mobile category drawer -->
-      <div id="catDrawer" class="drawer" aria-hidden="true">
-        <div class="drawer-panel" role="dialog" aria-modal="true" aria-label="Categories">
-          <div class="drawer-grip"></div>
-          <div class="drawer-header">
-            <div class="section-title">Categories</div>
-            <button id="drawerClose" class="btn-text">Close</button>
-          </div>
-          <div id="categoryListMobile" class="categories"></div>
-        </div>
-      </div>
-
-      <!-- Cards grid -->
-      <section id="cards" class="cards" aria-live="polite"></section>
-
-      <!-- Empty state -->
-      <section id="empty" class="empty hidden">
-        <div>No cards match your filters.</div>
-      </section>
-    </main>
+  <div class="topbar">
+    <img class="logo" src="/static/logo.jpg" alt="logo">
+    <div class="brand">Triple Seven Aviation Flashcards</div>
   </div>
 
-  <script src="/static/app.js" defer></script>
+  <div class="wrap">
+    <div class="panel left">
+      <div class="sectionTitle">Categories</div>
+      <div id="categories" class="catlist"></div>
+
+      <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
+      <div class="btnrow">
+        <button id="restart" class="restart" title="Clear progress and reshuffle the deck.">Restart (Clear & Shuffle)</button>
+        <button id="unhide" class="unhide" title="Unhide all previously hidden cards.">Show Hidden Again</button>
+      </div>
+
+      <div class="sectionTitle" style="margin-top:10px;">Stats</div>
+      <div id="stats" class="statline">
+        <span class="chip">Answered: <b id="s-seen">0</b></span>
+        <span class="chip">Correct: <b id="s-ok">0</b></span>
+        <span class="chip">Incorrect: <b id="s-wrong">0</b></span>
+        <span class="chip">Accuracy: <b id="s-acc">0%</b></span>
+      </div>
+      <div class="muted small">Stats only count cards in the categories currently checked.</div>
+    </div>
+
+    <div class="panel right">
+      <div id="status" class="muted">Loading deck…</div>
+      <div id="card">
+        <div id="qwrap">
+          <div class="q" id="qtext"></div>
+          <div id="qimgbox" class="imgbox"><img id="qimg" alt=""></div>
+          <div class="linkrow" id="linkrow" style="display:none">
+            <a id="qurl" class="extlink" target="_blank" rel="noopener">Open Additional Resources</a>
+          </div>
+        </div>
+
+        <div class="answrap" id="answrap">
+          <div class="a" id="ans"></div>
+          <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
+        </div>
+
+        <div class="controls-row">
+          <button id="prev" class="next" title="Go to the previous card.">Previous</button>
+
+          <div class="btnrow">
+            <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
+            <button id="correct" class="ok" title="Mark this card correct and move on.">I Knew It</button>
+            <button id="wrong" class="bad" title="Mark this card wrong and move on.">I Missed It</button>
+            <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide Card</button>
+          </div>
+
+          <div class="grow"></div>
+
+          <button id="next" class="next" title="Skip to the next card without marking.">Next</button>
+        </div>
+
+        <div class="footerline small">
+          <div id="footcat" class="muted"></div>
+          <div id="pos" class="muted"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const qText = document.getElementById('qtext');
+    const qImg  = document.getElementById('qimg');
+    const qImgBox = document.getElementById('qimgbox');
+    const linkRow = document.getElementById('linkrow');
+    const qUrl = document.getElementById('qurl');
+    const ansWrap = document.getElementById('answrap');
+    const ansEl = document.getElementById('ans');
+    const aImg  = document.getElementById('aimg');
+    const aImgBox = document.getElementById('aimgbox');
+    const posEl = document.getElementById('pos');
+    const footCat = document.getElementById('footcat');
+    const catsEl = document.getElementById('categories');
+
+    const sSeen = document.getElementById('s-seen');
+    const sOk = document.getElementById('s-ok');
+    const sWrong = document.getElementById('s-wrong');
+    const sAcc = document.getElementById('s-acc');
+
+    const showBtn = document.getElementById('show');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const hideBtn = document.getElementById('hideCardBtn');
+
+    let fullDeck = [], categories = [], selectedCats = new Set(), hiddenIds = new Set(JSON.parse(localStorage.getItem('hiddenIds')||'[]'));
+    let progress = JSON.parse(localStorage.getItem('progress')||'{"ok":{},"seen":{}}');
+    let idx = 0, filtered = [];
+
+    function normCard(c,i){
+      return {
+        id: c.id ?? i,
+        q:  c.question ?? c.q ?? '',
+        a:  c.answer ?? c.a ?? '',
+        image: c.image ?? '',
+        answer_image: c.answer_image ?? '',
+        url: (c.url ?? '').toString().trim(),
+        category: (c.category ?? c.subject ?? '').toString()
+      };
+    }
+    function uniqCats(deck){return Array.from(new Set(deck.map(c=>c.category).filter(Boolean))).sort();}
+    function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+    function saveHidden(){localStorage.setItem('hiddenIds',JSON.stringify([...hiddenIds]));}
+    function saveProgress(){localStorage.setItem('progress',JSON.stringify(progress));}
+
+    function buildCategoryUI(){
+      catsEl.innerHTML='';
+      categories.forEach(cat=>{
+        const row=document.createElement('label');row.className='checkboxline';
+        row.innerHTML=`<input type="checkbox" data-cat="${cat}" checked><span>${cat}</span>`;
+        catsEl.appendChild(row);
+      });
+      selectedCats=new Set(categories);
+      catsEl.onchange=e=>{
+        if(e.target.matches('input[data-cat]')){
+          const cat=e.target.getAttribute('data-cat');
+          if(e.target.checked) selectedCats.add(cat); else selectedCats.delete(cat);
+          refilter(); render();
+        }
+      };
+    }
+
+    function refilter(){
+      filtered=fullDeck.filter(c=>(!c.category||selectedCats.has(c.category))&&!hiddenIds.has(String(c.id)));
+      if(idx>=filtered.length) idx=0; updateStats();
+    }
+
+    function updateStats(){
+      let seen=0,ok=0;
+      filtered.forEach(c=>{const id=String(c.id);if(progress.seen[id])seen++;if(progress.ok[id])ok++;});
+      const wrong = Math.max(seen - ok, 0);
+      sSeen.textContent=seen; sOk.textContent=ok; sWrong.textContent=wrong;
+      sAcc.textContent=seen?Math.round((ok/seen)*100)+'%':'0%';
+    }
+
+    function isHttpUrl(u){return /^https?:\/\//i.test(u);}
+
+    function resetAnswerHiddenUI(){
+      ansEl.style.display='none';
+      aImgBox.style.display='none';
+      aImg.removeAttribute('src'); aImg.removeAttribute('alt');
+      ansWrap.style.display='none';
+      showBtn.textContent='Show Answer';
+      showBtn.classList.add('primary');
+      showBtn.classList.remove('hidebtn');
+    }
+
+    function render(){
+      if(!filtered.length){
+        qText.textContent="No cards match filters.";
+        qImgBox.style.display='none';
+        linkRow.style.display='none';
+        resetAnswerHiddenUI();
+        posEl.textContent=''; footCat.textContent='';
+        prevBtn.style.display='none';
+        nextBtn.style.display='none';
+        return;
+      }
+      const c=filtered[idx];
+      qText.textContent = c.q || '';
+
+      if (c.image){
+        qImg.src = c.image;
+        qImg.alt = c.q ? `Front image — ${c.q}` : 'Front image';
+        qImgBox.style.display = 'block';
+      } else {
+        qImgBox.style.display='none';
+        qImg.removeAttribute('src'); qImg.removeAttribute('alt');
+      }
+
+      if (c.url && isHttpUrl(c.url)){
+        qUrl.href = c.url;
+        qUrl.textContent = 'Open Related Resource';
+        linkRow.style.display = '';
+      } else {
+        linkRow.style.display='none';
+        qUrl.removeAttribute('href');
+      }
+
+      resetAnswerHiddenUI();
+      footCat.textContent=c.category?`Category: ${c.category}`:'Category: —';
+      posEl.textContent=`Card ${idx+1} of ${filtered.length}`;
+
+      prevBtn.style.display = idx===0 ? 'none' : '';
+      nextBtn.style.display = idx===filtered.length-1 ? 'none' : '';
+    }
+
+    // Show/Hide Answer toggle
+    showBtn.onclick=()=>{
+      if(!filtered.length) return;
+      const currentlyVisible = ansWrap.style.display !== 'none' && (ansEl.style.display === 'block' || aImgBox.style.display !== 'none');
+      if (currentlyVisible) {
+        resetAnswerHiddenUI();
+      } else {
+        const c=filtered[idx];
+        let anything=false;
+        if (c.a){
+          ansEl.style.display='block';
+          ansWrap.style.display='flex';
+          anything=true;
+        }
+        if (c.answer_image){
+          aImg.src = c.answer_image;
+          aImg.alt = c.q ? `Back image — ${c.q}` : 'Back image';
+          aImgBox.style.display = 'block';
+          ansWrap.style.display='flex';
+          anything=true;
+        }
+        if(!anything){
+          ansWrap.style.display='flex';
+          ansEl.style.display='block';
+          ansEl.textContent='(No answer provided)';
+        }
+        showBtn.textContent='Hide Answer';
+        showBtn.classList.add('hidebtn');
+        showBtn.classList.remove('primary');
+      }
+    };
+
+    // Navigation & grading
+    nextBtn.onclick=()=>{if(filtered.length){idx=Math.min(idx+1, filtered.length-1);render();}};
+    prevBtn.onclick=()=>{if(filtered.length){idx=Math.max(idx-1, 0);render();}};
+    document.getElementById('correct').onclick=()=>{if(filtered.length){const id=String(filtered[idx].id);progress.ok[id]=true;progress.seen[id]=true;saveProgress();updateStats();nextBtn.click();}};
+    document.getElementById('wrong').onclick=()=>{if(filtered.length){const id=String(filtered[idx].id);delete progress.ok[id];progress.seen[id]=true;saveProgress();updateStats();nextBtn.click();}};
+
+    // Hide Card button
+    hideBtn.onclick=()=>{
+      if(!filtered.length) return;
+      const id=String(filtered[idx].id);
+      hiddenIds.add(id);
+      saveHidden();
+      statusEl.textContent='Card hidden.';
+      refilter();
+      if(filtered.length){
+        idx=Math.min(idx, filtered.length-1);
+        render();
+      }else{
+        render();
+      }
+    };
+
+    // Session controls
+    document.getElementById('restart').onclick=()=>{
+      progress={ok:{},seen:{}}; saveProgress();
+      hiddenIds=new Set(); saveHidden();
+      shuffle(fullDeck); refilter(); idx=0; render();
+      statusEl.textContent='Session restarted.';
+    };
+    document.getElementById('unhide').onclick=()=>{
+      hiddenIds=new Set(); saveHidden(); refilter(); render();
+      statusEl.textContent='All hidden cards are now visible.';
+    };
+
+    // Boot
+    (async function boot(){
+      statusEl.textContent='Loading deck…';
+      try{
+        const res=await fetch('/api/cards',{cache:'no-store'});
+        const data=await res.json();
+        fullDeck=(Array.isArray(data)?data:data.cards||[]).map(normCard);
+        if(!fullDeck.length) throw new Error('No cards in cards.json');
+        categories=uniqCats(fullDeck); buildCategoryUI();
+        refilter(); idx=0; render();
+        statusEl.textContent=`Loaded ${fullDeck.length} cards.`;
+      }catch(e){
+        statusEl.textContent='Failed to load cards: '+e.message;
+        qText.textContent='Loading failed.';
+      }
+    })();
+  </script>
 </body>
 </html>
