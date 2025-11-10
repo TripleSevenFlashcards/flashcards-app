@@ -3,13 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <title>Flashcards</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
     :root{
       --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
       --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
     }
-    html,body{height:100%}
+    html,body{
+      padding-bottom: calc(env(safe-area-inset-bottom) + 0px);
+      padding-top: env(safe-area-inset-top);
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+height:100%}
     body{
       margin:0; font-family: system-ui, Arial, sans-serif;
       background: radial-gradient(1200px 600px at 20% -10%, #1a3f80 0%, transparent 60%), linear-gradient(135deg,var(--bg1),var(--bg2));
@@ -31,7 +36,7 @@
     .panel{
       background:var(--panel); color:var(--text);
       border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      max-height: calc(100vh - 140px);
+      max-height: calc(100svh - 140px);
       overflow:auto;
       /* no black outline on panels */
       border: none;
@@ -43,7 +48,7 @@
     .muted{color:var(--muted); font-size:13px}
     .sectionTitle{font-weight:700; margin:6px 0 10px}
 
-    .catlist{display:flex; flex-direction:column; gap:4px; max-height:40vh; overflow:auto; padding-right:6px}
+    .catlist{display:flex; flex-direction:column; gap:4px; max-height:40svh; overflow:auto; padding-right:6px}
     .checkboxline{display:flex; gap:6px; align-items:center}
     .checkboxline span{font-size:13px; line-height:1.15}
 
@@ -59,6 +64,8 @@
     button{
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
       cursor:pointer; text-transform:capitalize; border:2px solid #000; /* black outline */
+    
+      min-height:48px;
     }
     button.primary{background:var(--accent); color:#fff;}
     button.primary:hover{filter:brightness(0.95);}
