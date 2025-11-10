@@ -3,10 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <title>Flashcards</title>
-
-  <!-- iPhone-safe viewport (enables safe areas on iOS) -->
+  <!-- iPhone-safe viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
   <style>
     :root{
       --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
@@ -21,16 +19,27 @@
         linear-gradient(135deg,var(--bg1),var(--bg2));
       color:#fff; display:flex; flex-direction:column; align-items:center;
 
-      /* iPhone-specific safety + UX */
+      /* iPhone safety + UX */
       padding-top: env(safe-area-inset-top);
       padding-bottom: calc(env(safe-area-inset-bottom) + 0px);
       -webkit-text-size-adjust: 100%;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .topbar{width:100%; max-width:1100px; display:flex; align-items:center; gap:10px; padding:12px 16px;}
+    .topbar{
+      width:100%; max-width:1100px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; padding:12px 16px;
+    }
+    .leftGroup{display:flex; align-items:center; gap:10px}
     .logo{height:36px}
     .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
+    .hamburger{
+      display:none; align-items:center; justify-content:center;
+      width:44px; height:44px; border-radius:8px; border:2px solid rgba(255,255,255,.25);
+      background:rgba(255,255,255,.08); color:#fff; cursor:pointer;
+    }
+    .hamburger:focus{outline:2px solid #88b4ff; outline-offset:2px}
 
     .wrap{
       width:100%; max-width:1100px;
@@ -41,10 +50,9 @@
     .panel{
       background:var(--panel); color:var(--text);
       border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      /* Use small viewport height to avoid iOS toolbar jumps */
-      max-height: calc(100svh - 140px);
+      max-height: calc(100svh - 140px); /* svh to avoid iOS toolbar jumps */
       overflow:auto;
-      border: none; /* no outline on panels */
+      border: none;
     }
 
     .left{padding:12px; display:flex; flex-direction:column;}
@@ -67,8 +75,7 @@
     button{
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
       cursor:pointer; border:2px solid transparent; outline:0;
-      /* iPhone comfortable tap size */
-      min-height:48px;
+      min-height:48px; /* comfortable tap */
     }
     button:focus{outline:2px solid #88b4ff; outline-offset:2px}
     button:hover{filter:brightness(0.98)}
@@ -95,29 +102,62 @@
 
     .answrap{display:none; flex-direction:column; gap:10px;}
 
-    /* Bottom controls layout inside right panel */
     .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
     .grow{flex:1;}
-
     footer{margin:10px 0 20px; font-size:12px; color:#b7c2d6}
 
-    /* Narrow screens: stack columns */
+    /* --- Mobile / iPhone landscape: left panel becomes a drawer --- */
     @media (max-width: 860px){
       .wrap{grid-template-columns: 1fr;}
-      .catlist{max-height: 30svh;}
+      .hamburger{display:inline-flex;}
+      /* off-canvas drawer using the same .panel.left element */
+      .panel.left{
+        position: fixed; top:0; left:0; bottom:0;
+        width:min(86vw, 360px);
+        transform: translateX(-100%);
+        transition: transform .25s ease;
+        z-index: 50;
+        padding-top: calc(env(safe-area-inset-top) + 12px);
+        padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+        max-height: none; /* drawer owns its height */
+        border-top-right-radius: 16px; border-bottom-right-radius: 16px;
+      }
+      .panel.left.open{ transform: translateX(0); }
+      .catlist{ max-height: 70svh; } /* more room in drawer */
+      .scrim{
+        display:none;
+        position:fixed; inset:0;
+        background: rgba(0,0,0,.40);
+        z-index: 40;
+      }
+      .scrim.show{ display:block; }
+      body.no-scroll{ overflow:hidden; }
     }
   </style>
 </head>
-
 <body>
   <div class="topbar">
-    <img class="logo" src="/static/logo.jpg" alt="logo">
-    <div class="brand">Triple Seven Aviation Flashcards</div>
+    <div class="leftGroup">
+      <button id="menuBtn" class="hamburger" aria-label="Toggle categories" aria-controls="catDrawer" aria-expanded="false">
+        <!-- simple hamburger icon -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <img class="logo" src="/static/logo.jpg" alt="logo">
+      <div class="brand">Triple Seven Aviation Flashcards</div>
+    </div>
   </div>
 
+  <!-- scrim for drawer -->
+  <div id="scrim" class="scrim" hidden></div>
+
   <div class="wrap">
-    <!-- LEFT -->
-    <div class="panel left">
+    <!-- LEFT (becomes drawer on small screens) -->
+    <div id="catDrawer" class="panel left" role="dialog" aria-label="Categories" aria-modal="true" tabindex="-1">
       <div class="sectionTitle">Categories</div>
       <div id="categories" class="catlist"></div>
 
@@ -188,6 +228,11 @@
     const btnRestart = $('#restart'), btnUnhide = $('#unhide');
     const btnPrev = $('#prev'), btnNext = $('#next'), btnShow = $('#show'), btnOk = $('#correct'), btnBad = $('#wrong');
 
+    // Drawer elements
+    const drawer = $('#catDrawer');
+    const scrim  = $('#scrim');
+    const menuBtn = $('#menuBtn');
+
     // State
     let fullDeck = [];
     let deck = [];
@@ -218,8 +263,7 @@
         categoriesEl.appendChild(line);
       });
       categoriesEl.addEventListener('change', () => {
-        refilter();
-        idx = 0; showing = false; render();
+        refilter(); idx = 0; showing = false; render();
       }, {once:true});
     }
 
@@ -232,7 +276,10 @@
     }
 
     function render(){
-      if (!deck.length){ qEl.textContent = 'No cards match your filters.'; answrap.style.display='none'; progress.textContent='0 / 0'; return; }
+      if (!deck.length){
+        qEl.textContent = 'No cards match your filters.'; answrap.style.display='none'; progress.textContent='0 / 0';
+        return;
+      }
       const c = deck[idx];
       qcatEl.textContent = c.category;
 
@@ -259,12 +306,29 @@
     btnBad.onclick  = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
 
     btnRestart.onclick = () => {
-      // Simple reshuffle
       for (let i = fullDeck.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]]; }
       refilter(); idx = 0; showing = false; render();
     };
-
     btnUnhide.onclick = () => { hiddenIds.clear(); refilter(); idx = 0; showing = false; render(); };
+
+    // Drawer behavior (small screens)
+    function openDrawer(){
+      drawer.classList.add('open'); scrim.classList.add('show'); scrim.hidden = false;
+      document.body.classList.add('no-scroll');
+      menuBtn.setAttribute('aria-expanded','true');
+      drawer.focus();
+    }
+    function closeDrawer(){
+      drawer.classList.remove('open'); scrim.classList.remove('show'); scrim.hidden = true;
+      document.body.classList.remove('no-scroll');
+      menuBtn.setAttribute('aria-expanded','false');
+      menuBtn.focus();
+    }
+    menuBtn.addEventListener('click', () => {
+      if (drawer.classList.contains('open')) closeDrawer(); else openDrawer();
+    });
+    scrim.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer(); });
 
     // Basic swipe gestures for iPhone
     let startX=null;
