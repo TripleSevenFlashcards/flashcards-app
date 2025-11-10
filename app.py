@@ -1,366 +1,143 @@
-<!doctype html>
+# app.py — Flask app for Render (works with `gunicorn app:app`)
+import os
+import json
+from pathlib import Path
+from flask import Flask, send_from_directory, jsonify, make_response, abort
+
+# --- Paths & env
+ROOT        = Path(__file__).resolve().parent
+STATIC_DIR  = ROOT / "static"
+CARDS_DIR   = STATIC_DIR / "cards"
+DATA_DIR    = ROOT / "data"
+DATA_DIR.mkdir(exist_ok=True)
+CARDS_JSON  = DATA_DIR / "cards.json"
+DB_PATH     = os.environ.get("DB_PATH", str(ROOT / "app.db"))  # kept for future use
+
+app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="/static")
+
+# --- Minimal default deck if data/cards.json is missing
+DEFAULT_DECK = [
+    {"id": 1, "front": "What does ‘IM SAFE’ stand for?", "back": "Illness, Medication, Stress, Alcohol, Fatigue, Emotion/Eating"},
+    {"id": 2, "front": "VFR weather minima (Class E, <10,000’ MSL)?", "back": "3 SM, 500 below, 1,000 above, 2,000 horizontal"},
+]
+
+def load_cards():
+    if CARDS_JSON.exists():
+        try:
+            with CARDS_JSON.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list) and data:
+                return data
+        except Exception:
+            pass
+    return DEFAULT_DECK
+
+# --- HTML UI
+INDEX_HTML = """<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Flashcards</title>
-  <!-- iPhone-safe viewport -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <style>
-    :root{
-      --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
-      --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
-    }
-
-    html,body{height:100%}
-    body{
-      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:
-        radial-gradient(1200px 600px at 20% -10%, #1a3d7a 0%, transparent 60%),
-        linear-gradient(135deg,var(--bg1),var(--bg2));
-      color:#fff; display:flex; flex-direction:column; align-items:center;
-
-      /* iPhone safety + UX */
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: calc(env(safe-area-inset-bottom) + 0px);
-      -webkit-text-size-adjust: 100%;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .topbar{
-      width:100%; max-width:1100px;
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px; padding:12px 16px;
-    }
-    .leftGroup{display:flex; align-items:center; gap:10px}
-    .logo{height:36px}
-    .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
-    .hamburger{
-      display:none; align-items:center; justify-content:center;
-      width:44px; height:44px; border-radius:8px; border:2px solid rgba(255,255,255,.25);
-      background:rgba(255,255,255,.08); color:#fff; cursor:pointer;
-    }
-    .hamburger:focus{outline:2px solid #88b4ff; outline-offset:2px}
-
-    .wrap{
-      width:100%; max-width:1100px;
-      display:grid; grid-template-columns: 280px 1fr; gap:14px;
-      padding:0 16px 16px;
-    }
-
-    .panel{
-      background:var(--panel); color:var(--text);
-      border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      max-height: calc(100svh - 140px);
-      overflow:auto; border: none;
-    }
-
-    .left{padding:12px; display:flex; flex-direction:column;}
-    .right{padding:16px; min-height:320px; display:flex; flex-direction:column;}
-
-    .sectionTitle{font-weight:700; margin:6px 0 10px}
-    .muted{color:var(--muted); font-size:13px}
-
-    .catlist{display:flex; flex-direction:column; gap:4px; max-height:40svh; overflow:auto; padding-right:6px}
-    .checkboxline{display:flex; gap:6px; align-items:center}
-    .checkboxline span{font-size:13px; line-height:1.15}
-
-    .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
-    .chip{
-      background:#0c2146; color:#e8f1ff; border:1px solid #2a4f8a;
-      padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;
-    }
-
-    .btnrow{display:flex; gap:10px; flex-wrap:wrap}
-    button{
-      padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
-      cursor:pointer; border:2px solid transparent; outline:0;
-      min-height:48px;
-    }
-    button:focus{outline:2px solid #88b4ff; outline-offset:2px}
-    button:hover{filter:brightness(0.98)}
-
-    button.primary{background:var(--accent); color:#fff;}
-    button.ok{background:var(--ok); color:#fff;}
-    button.bad{background:#ffcccc; color:#000;}
-    button.bad:hover{background:#b02a37; color:#fff;}
-    button.next{background:var(--next); color:#fff;}
-    button.restart{background:#b02a37; color:#fff;}
-    button.unhide{background:#1b8a3a; color:#fff;}
-
-    .q{font-size: clamp(18px, 3.2vw, 22px); font-weight:700;}
-    .a{
-      display:none; color:#1d2630; background:#f6f8fb;
-      border:1px dashed #d9e1ee; border-radius:10px; padding:14px; white-space:pre-wrap
-    }
-
-    .imgbox{
-      background:#f1f4fa; border: 1px solid #d4ddec;
-      border-radius:10px; display:none; overflow:hidden; margin-top:8px;
-    }
-    .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
-
-    .answrap{display:none; flex-direction:column; gap:10px;}
-
-    .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
-    .grow{flex:1;}
-    footer{margin:10px 0 20px; font-size:12px; color:#b7c2d6}
-
-    /* Mobile / iPhone landscape: left panel becomes a drawer */
-    @media (max-width: 860px){
-      .wrap{grid-template-columns: 1fr;}
-      .hamburger{display:inline-flex;}
-      .panel.left{
-        position: fixed; top:0; left:0; bottom:0;
-        width:min(86vw, 360px);
-        transform: translateX(-100%);
-        transition: transform .25s ease;
-        z-index: 50;
-        padding-top: calc(env(safe-area-inset-top) + 12px);
-        padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
-        max-height: none;
-        border-top-right-radius: 16px; border-bottom-right-radius: 16px;
-      }
-      .panel.left.open{ transform: translateX(0); }
-      .catlist{ max-height: 70svh; }
-      .scrim{
-        display:none; position:fixed; inset:0;
-        background: rgba(0,0,0,.40); z-index: 40;
-      }
-      .scrim.show{ display:block; }
-      body.no-scroll{ overflow:hidden; }
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flashcards</title>
+<link rel="icon" href="/logo.jpg">
+<style>
+:root { --bg:#0b1b34; --panel:#12284d; --ink:#e7eefc; --muted:#a9b8d9; --accent:#6aa9ff; }
+* { box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: radial-gradient(1200px 600px at 20% -10%, #1a3d7a 0%, transparent 60%),
+              radial-gradient(900px 500px at 110% 20%, #0e213f 0%, transparent 55%),
+              linear-gradient(180deg, #081427 0%, #0b1b34 60%, #0a1830 100%);
+}
+.header {
+  display:flex; align-items:center; gap:.75rem; padding:1rem 1.25rem; border-bottom:1px solid rgba(255,255,255,.06);
+  backdrop-filter: blur(4px);
+}
+.header img { width:32px; height:32px; border-radius:6px; }
+.header .title { font-weight:700; letter-spacing:.2px; }
+.wrapper { max-width:960px; margin:2rem auto; padding:0 1rem; }
+.panel {
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+.controls { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+button {
+  border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06);
+  color:var(--ink); padding:.6rem .9rem; border-radius:12px; cursor:pointer;
+}
+button:hover { background:rgba(255,255,255,.12); }
+.card {
+  display:flex; align-items:center; justify-content:center; text-align:center; min-height:220px;
+  border:1px dashed rgba(255,255,255,.2); border-radius:14px; padding:1.25rem; font-size:1.25rem;
+}
+.meta { margin-top:.75rem; color:var(--muted); font-size:.9rem; }
+.badge { display:inline-block; padding:.2rem .5rem; border:1px solid rgba(255,255,255,.2); border-radius:999px; font-size:.8rem; }
+.footer { text-align:center; color:var(--muted); font-size:.85rem; padding:2rem 0; }
+</style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="leftGroup">
-      <button id="menuBtn" class="hamburger" aria-label="Toggle categories" aria-controls="catDrawer" aria-expanded="false">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-      <img class="logo" src="/static/logo.jpg" alt="logo">
-      <div class="brand">Triple Seven Aviation Flashcards</div>
-    </div>
+  <div class="header">
+    <img src="/logo.jpg" alt="logo" />
+    <div class="title">Flashcards</div>
+    <div class="badge" style="margin-left:auto;">Render</div>
   </div>
-
-  <div id="scrim" class="scrim" hidden></div>
-
-  <div class="wrap">
-    <!-- LEFT -->
-    <div id="catDrawer" class="panel left" role="dialog" aria-label="Categories" aria-modal="true" tabindex="-1">
-      <div class="sectionTitle">Categories</div>
-      <div id="categories" class="catlist"></div>
-
-      <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
-      <div class="btnrow">
-        <button id="restart" class="restart">Restart (Clear & Shuffle)</button>
-        <button id="unhide" class="unhide">Unhide All</button>
+  <div class="wrapper">
+    <div class="panel">
+      <div class="controls">
+        <button id="prev">Prev</button>
+        <button id="flip">Flip</button>
+        <button id="next">Next</button>
       </div>
-
-      <div class="sectionTitle" style="margin-top:10px;">Stats</div>
-      <div class="statline">
-        <span class="chip" id="statTotal">Total: 0</span>
-        <span class="chip" id="statFiltered">Filtered: 0</span>
-        <span class="chip" id="statHidden">Hidden: 0</span>
-      </div>
-
-      <div class="muted" id="status">Loading…</div>
+      <div id="card" class="card">Loading…</div>
+      <div class="meta"><span id="pos">0/0</span></div>
     </div>
-
-    <!-- RIGHT -->
-    <div class="panel right">
-      <div id="qcat" class="muted"></div>
-      <div class="q" id="q">…</div>
-
-      <div class="imgbox" id="qimgbox"><img id="qimg" alt=""></div>
-
-      <div class="answrap" id="answrap">
-        <div class="a" id="ans"></div>
-        <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
-      </div>
-
-      <div class="controls-row" style="margin-top:10px;">
-        <button id="prev" class="next">Previous</button>
-        <div class="btnrow grow">
-          <button id="show" class="primary">Show Answer</button>
-          <button id="correct" class="ok">I Knew It</button>
-          <button id="wrong" class="bad">I Didn’t Know</button>
-        </div>
-        <button id="next" class="next">Next</button>
-      </div>
-
-      <footer><div id="progress" class="muted">0 / 0</div></footer>
-    </div>
+    <div class="footer">Serving <code>/logo.jpg</code> and files under <code>/static/cards/…</code>. Data from <code>/api/cards</code>.</div>
   </div>
-
-  <script>
-    document.addEventListener('touchstart', function(){}, {passive:true});
-
-    const $  = (s) => document.querySelector(s);
-    const $$ = (s) => Array.from(document.querySelectorAll(s));
-
-    const statusEl = $('#status');
-    const qEl = $('#q'), ansEl = $('#ans'), qcatEl = $('#qcat');
-    const qimg = $('#qimg'), qimgbox = $('#qimgbox');
-    const aimg = $('#aimg'), aimgbox = $('#aimgbox');
-    const answrap = $('#answrap');
-    const statTotal = $('#statTotal'), statFiltered = $('#statFiltered'), statHidden = $('#statHidden');
-    const progress = $('#progress');
-
-    const categoriesEl = $('#categories');
-    const btnRestart = $('#restart'), btnUnhide = $('#unhide');
-    const btnPrev = $('#prev'), btnNext = $('#next'), btnShow = $('#show'), btnOk = $('#correct'), btnBad = $('#wrong');
-
-    // Drawer
-    const drawer = $('#catDrawer');
-    const scrim  = $('#scrim');
-    const menuBtn = $('#menuBtn');
-
-    // --- Image URL normalization ---
-    function urlFor(img){
-      if (!img) return '';
-      // trim spaces
-      img = String(img).trim();
-      // If already absolute URL or starts with '/', use as-is
-      if (/^https?:\/\//i.test(img) || img.startsWith('/')) return img;
-      // If string starts with 'cards/', strip that and prefix /cards/
-      img = img.replace(/^cards\//i, '');
-      return '/cards/' + img;
-    }
-
-    // State
-    let fullDeck = [];
-    let deck = [];
-    let cats = [];
-    let idx = 0;
-    let showing = false;
-    let hiddenIds = new Set();
-
-    const uniq = (arr) => [...new Set(arr)];
-    const normCard = (c) => ({
-      id: c.id,
-      category: c.category || 'General',
-      question: c.question || '',
-      answer: c.answer || '',
-      qimage: c.qimage || c.qimg || c.qImage || '',
-      aimage: c.aimage || c.aimg || c.aImage || ''
-    });
-
-    function buildCategoryUI(){
-      categoriesEl.innerHTML = '';
-      cats.forEach(cat => {
-        const line = document.createElement('label');
-        line.className = 'checkboxline';
-        line.innerHTML = `
-          <input type="checkbox" data-cat value="${cat}" checked />
-          <span>${cat}</span>
-        `;
-        categoriesEl.appendChild(line);
-      });
-      categoriesEl.addEventListener('change', () => {
-        refilter(); idx = 0; showing = false; render();
-      }, {once:true});
-    }
-
-    function refilter(){
-      const chosen = $$('input[data-cat]:checked').map(i => i.value);
-      deck = fullDeck.filter(c => chosen.includes(c.category) && !hiddenIds.has(c.id));
-      statTotal.textContent = 'Total: ' + fullDeck.length;
-      statFiltered.textContent = 'Filtered: ' + deck.length;
-      statHidden.textContent = 'Hidden: ' + hiddenIds.size;
-    }
-
-    function render(){
-      if (!deck.length){
-        qEl.textContent = 'No cards match your filters.'; answrap.style.display='none'; progress.textContent='0 / 0';
-        qimgbox.style.display='none'; aimgbox.style.display='none';
-        return;
-      }
-      const c = deck[idx];
-      qcatEl.textContent = c.category;
-      qEl.textContent = c.question || '';
-      ansEl.textContent = c.answer || '';
-
-      // images (with onerror hide)
-      const qsrc = urlFor(c.qimage);
-      const asrc = urlFor(c.aimage);
-
-      if (qsrc){
-        qimg.src = qsrc; qimg.onload = ()=> qimgbox.style.display='block';
-        qimg.onerror = ()=> { qimgbox.style.display='none'; };
-      } else { qimgbox.style.display='none'; }
-
-      if (asrc){
-        aimg.src = asrc; aimg.onload = ()=> aimgbox.style.display='block';
-        aimg.onerror = ()=> { aimgbox.style.display='none'; };
-      } else { aimgbox.style.display='none'; }
-
-      answrap.style.display = showing ? 'flex' : 'none';
-      btnShow.textContent = showing ? 'Hide Answer' : 'Show Answer';
-      progress.textContent = (idx+1) + ' / ' + deck.length;
-    }
-
-    const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-
-    btnShow.onclick = () => { showing = !showing; render(); };
-    btnNext.onclick = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-    btnPrev.onclick = () => { idx = clamp(idx-1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-    btnOk.onclick   = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-    btnBad.onclick  = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-
-    btnRestart.onclick = () => {
-      for (let i = fullDeck.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]]; }
-      refilter(); idx = 0; showing = false; render();
-    };
-    btnUnhide.onclick = () => { hiddenIds.clear(); refilter(); idx = 0; showing = false; render(); };
-
-    // Drawer behavior
-    function openDrawer(){
-      drawer.classList.add('open'); scrim.classList.add('show'); scrim.hidden = false;
-      document.body.classList.add('no-scroll');
-      menuBtn.setAttribute('aria-expanded','true');
-      drawer.focus();
-    }
-    function closeDrawer(){
-      drawer.classList.remove('open'); scrim.classList.remove('show'); scrim.hidden = true;
-      document.body.classList.remove('no-scroll');
-      menuBtn.setAttribute('aria-expanded','false');
-      menuBtn.focus();
-    }
-    menuBtn.addEventListener('click', () => {
-      if (drawer.classList.contains('open')) closeDrawer(); else openDrawer();
-    });
-    scrim.addEventListener('click', closeDrawer);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer(); });
-
-    // Swipes for card nav
-    let startX=null;
-    document.addEventListener('touchstart', e => { startX = e.changedTouches[0].clientX; }, {passive:true});
-    document.addEventListener('touchend', e => {
-      const dx = e.changedTouches[0].clientX - (startX ?? 0);
-      if (Math.abs(dx) > 40) { if (dx < 0) btnNext.click(); else btnPrev.click(); }
-    }, {passive:true});
-
-    // Load data
-    (async function init(){
-      try{
-        const res = await fetch('/api/cards', {cache:'no-store'});
-        const data = await res.json();
-        fullDeck = (Array.isArray(data) ? data : (data.cards || [])).map(normCard);
-        if (!fullDeck.length) throw new Error('No cards in cards.json');
-        cats = uniq(fullDeck.map(c => c.category));
-        buildCategoryUI();
-        refilter(); idx = 0; showing = false; render();
-        statusEl.textContent = `Loaded ${fullDeck.length} cards.`;
-      }catch(e){
-        statusEl.textContent = 'Failed to load cards: ' + e.message;
-        qEl.textContent = 'Loading failed.';
-      }
-    })();
-  </script>
+<script>
+let cards=[], i=0, back=false;
+async function load(){ try{
+  const r = await fetch('/api/cards'); cards = await r.json();
+  if(!Array.isArray(cards) || cards.length===0) cards=[{front:'No cards', back:'Add data/cards.json'}];
+  i=0; back=false; render();
+}catch(e){ document.getElementById('card').textContent='Failed to load cards.'; } }
+function render(){
+  const c = cards[i]||{front:'—',back:'—'};
+  document.getElementById('card').textContent = back ? (c.back||'') : (c.front||'');
+  document.getElementById('pos').textContent = `${i+1}/${cards.length}`;
+}
+document.getElementById('prev').onclick = ()=>{ i=(i-1+cards.length)%cards.length; back=false; render(); };
+document.getElementById('next').onclick = ()=>{ i=(i+1)%cards.length; back=false; render(); };
+document.getElementById('flip').onclick = ()=>{ back=!back; render(); };
+load();
+</script>
 </body>
 </html>
+"""
+
+# --- Routes
+@app.get("/")
+def index():
+    return make_response(INDEX_HTML, 200, {"Content-Type": "text/html; charset=utf-8"})
+
+@app.get("/logo.jpg")
+def logo():
+    if not (STATIC_DIR / "logo.jpg").exists():
+        abort(404)
+    return send_from_directory(STATIC_DIR, "logo.jpg")
+
+@app.get("/cards/<path:filename>")
+def cards_static(filename: str):
+    path = CARDS_DIR / filename
+    if not path.exists():
+        abort(404)
+    return send_from_directory(CARDS_DIR, filename)
+
+@app.get("/api/cards")
+def api_cards():
+    return jsonify(load_cards())
+
+# --- Entrypoint for local dev (Render uses gunicorn)
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=int(os.environ.get("FLASK_PORT", "5000")), debug=True)
