@@ -73,19 +73,19 @@
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
       cursor:pointer; text-transform:capitalize; border:2px solid #000; /* black outline */
     }
-    /* Button color variants */
+    /* Button color variants */  /* These were 0.95 but I changed to .50 */
     button.primary{background:var(--accent); color:#fff;}
-    button.primary:hover{filter:brightness(0.50);}          /* 0.95 */
+    button.primary:hover{filter:brightness(0.50);}          
     button.ok{background:var(--ok); color:#fff;}
-    button.ok:hover{filter:brightness(0.95);}
+    button.ok:hover{filter:brightness(0.50);}
     button.bad{background:#ffcccc; color:#000;}
     button.bad:hover{background:#b02a37; color:#fff;}
     button.next{background:var(--next); color:#fff;}
-    button.next:hover{filter:brightness(0.9);}
+    button.next:hover{filter:brightness(0.50);}
     button.restart{background:#b02a37; color:#fff;}
-    button.restart:hover{filter:brightness(0.9);}
+    button.restart:hover{filter:brightness(.50);}
     button.unhide{background:#1b8a3a; color:#fff;}
-    button.unhide:hover{filter:brightness(0.9);}
+    button.unhide:hover{filter:brightness(.50);}
     /* Hide Card: requested #435663 with black outline */
     button.hidecard{background:#435663; color:#fff;}
 
@@ -132,7 +132,7 @@
     .answrap{display:none; flex-direction:column; gap:10px;}
     /* 'Hide Answer' button visual state */
     .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
-    .hidebtn:hover{filter:brightness(0.95);}
+    .hidebtn:hover{filter:brightness(.50);}   /*  Was .9   */
 
     /* Bottom controls layout (prev / actions / next) */
     /* Controls row container */
