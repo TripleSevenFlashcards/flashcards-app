@@ -79,7 +79,15 @@
     button:focus{outline:2px solid #88b4ff; outline-offset:2px}
     button:hover{filter:brightness(0.98)}
 
-    button.primary{background:var(--accent); color:#fff;}
+    
+    /* Uniform smaller buttons for bottom controls */
+    .btn-sm{
+      min-height:40px;
+      padding:6px 10px;
+      width:140px;
+    }
+
+button.primary{background:var(--accent); color:#fff;}
     button.ok{background:var(--ok); color:#fff;}
     button.bad{background:#ffcccc; color:#000;}
     button.bad:hover{background:#b02a37; color:#fff;}
@@ -184,13 +192,13 @@
       </div>
 
       <div class="controls-row" style="margin-top:10px;">
-        <button id="prev" class="next">Previous</button>
+        <button id="prev" class="next btn-sm">Previous</button>
         <div class="btnrow grow">
-          <button id="show" class="primary">Show Answer</button>
-          <button id="correct" class="ok">I Knew It</button>
-          <button id="wrong" class="bad">I Didn’t Know</button>
+          <button id="show" class="primary btn-sm">Show Answer</button>
+          <button id="correct" class="ok btn-sm">I Knew It</button>
+          <button id="wrong" class="bad btn-sm">I Didn’t Know</button>
         </div>
-        <button id="next" class="next">Next</button>
+        <button id="next" class="next btn-sm">Next</button>
       </div>
 
       <footer><div id="progress" class="muted">0 / 0</div></footer>
