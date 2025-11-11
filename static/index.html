@@ -1,10 +1,12 @@
 <!doctype html>
 <html>
 <head>
+  <!-- Head: metadata, viewport, inline styles -->
   <meta charset="utf-8" />
   <title>Flashcards</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    /* Styles: theme tokens, layout, buttons, responsiveness */
     :root{
       --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
       --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
@@ -60,6 +62,7 @@
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
       cursor:pointer; text-transform:capitalize; border:2px solid #000; /* black outline */
     }
+    /* Button color variants */
     button.primary{background:var(--accent); color:#fff;}
     button.primary:hover{filter:brightness(0.95);}
     button.ok{background:var(--ok); color:#fff;}
@@ -83,6 +86,7 @@
     .q{font-size:20px; font-weight:700}
 
     /* Image boxes with light outline */
+    /* Optional image containers; hidden until image loads */
     .imgbox{
       width:6in; height:auto; max-width:100%;
       background:#f6f8fb; border:1px solid #d9e1ee; /* light border */
@@ -117,11 +121,14 @@
   </style>
 </head>
 <body>
+  <!-- Body: top bar, left drawer, right flashcard panel -->
+  <!-- Top bar: brand + hamburger -->
   <div class="topbar">
     <img class="logo" src="/static/logo.jpg" alt="logo">
     <div class="brand">Triple Seven Aviation Flashcards</div>
   </div>
 
+  <!-- Main grid wrapper -->
   <div class="wrap">
     <div class="panel left">
       <div class="sectionTitle">Categories</div>
@@ -183,6 +190,7 @@
   </div>
 
   <script>
+    // Script: DOM refs, state, handlers, data loading
     const statusEl = document.getElementById('status');
     const qText = document.getElementById('qtext');
     const qImg  = document.getElementById('qimg');
@@ -228,6 +236,7 @@
     function saveHidden(){localStorage.setItem('hiddenIds',JSON.stringify([...hiddenIds]));}
     function saveProgress(){localStorage.setItem('progress',JSON.stringify(progress));}
 
+    // buildCategoryUI: render category checkboxes and add one-time change handler
     function buildCategoryUI(){
       catsEl.innerHTML='';
       categories.forEach(cat=>{
@@ -245,6 +254,7 @@
       };
     }
 
+    // refilter: rebuild deck from chosen categories and not-hidden; update stats
     function refilter(){
       filtered=fullDeck.filter(c=>(!c.category||selectedCats.has(c.category))&&!hiddenIds.has(String(c.id)));
       if(idx>=filtered.length) idx=0; updateStats();
@@ -270,6 +280,7 @@
       showBtn.classList.remove('hidebtn');
     }
 
+    // render: show current card, images, answer visibility, progress
     function render(){
       if(!filtered.length){
         qText.textContent="No cards match filters.";
