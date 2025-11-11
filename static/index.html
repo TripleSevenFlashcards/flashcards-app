@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- Head: metadata, viewport, styles -->
   <meta charset="utf-8" />
   <title>Flashcards</title>
   <!-- iPhone-safe viewport -->
@@ -10,12 +9,6 @@
     :root{
       --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
       --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
-
-      /* Added tokens to make hover updates simple */
-      --btn-bad:#ffcccc;
-      --btn-bad-hover:#b02a37;
-      --btn-restart:#b02a37;
-      --btn-unhide:#1b8a3a;
     }
 
     html,body{height:100%}
@@ -82,30 +75,17 @@
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
       cursor:pointer; border:2px solid transparent; outline:0;
       min-height:48px;
-      transition: filter .15s ease, transform .02s ease;
     }
-    button:focus-visible{outline:2px solid #88b4ff; outline-offset:2px}
+    button:focus{outline:2px solid #88b4ff; outline-offset:2px}
     button:hover{filter:brightness(0.98)}
-    button:active{transform:translateY(1px)}
 
-    /* Color variants for key actions (with unified hover behavior) */
-    button.primary { background: var(--accent);      color:#fff; }
-    button.ok      { background: var(--ok);          color:#fff; }
-    button.bad     { background: var(--btn-bad);     color:#000; }
-    button.next    { background: var(--next);        color:#fff; }
-    button.restart { background: var(--btn-restart); color:#fff; }
-    button.unhide  { background: var(--btn-unhide);  color:#fff; }
-
-    /* Keep .bad special-case hover, others use brightness filter */
-    
-    /* Explicit hover styles for all variants (more visible than filter) */
-    button.primary:hover { background: #247ad9; }  /* darker than --accent #2b8cff */
-    button.ok:hover      { background: #166f2f; }  /* darker than --ok #1b8a3a */
-    button.next:hover    { background: #0b245a; }  /* darker than --next #0d2c6d */
-    button.restart:hover { background: #92232d; }  /* darker than restart #b02a37 */
-    button.unhide:hover  { background: #166f2f; }  /* darker than unhide #1b8a3a */
-    
-    button.bad:hover{ background: var(--btn-bad-hover); color:#fff; }
+    button.primary{background:var(--accent); color:#fff;}
+    button.ok{background:var(--ok); color:#fff;}
+    button.bad{background:#ffcccc; color:#000;}
+    button.bad:hover{background:#b02a37; color:#fff;}
+    button.next{background:var(--next); color:#fff;}
+    button.restart{background:#b02a37; color:#fff;}
+    button.unhide{background:#1b8a3a; color:#fff;}
 
     .q{font-size: clamp(18px, 3.2vw, 22px); font-weight:700;}
     .a{
@@ -152,7 +132,6 @@
   </style>
 </head>
 <body>
-  <!-- Body: topbar, layout grid, panels -->
   <div class="topbar">
     <div class="leftGroup">
       <button id="menuBtn" class="hamburger" aria-label="Toggle categories" aria-controls="catDrawer" aria-expanded="false">
@@ -219,8 +198,6 @@
   </div>
 
   <script>
-    // Script: app state, UI handlers, data loading
-
     document.addEventListener('touchstart', function(){}, {passive:true});
 
     const $  = (s) => document.querySelector(s);
