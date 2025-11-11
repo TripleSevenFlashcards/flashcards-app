@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Head: metadata, viewport, styles -->
   <meta charset="utf-8" />
   <title>Flashcards</title>
   <!-- iPhone-safe viewport -->
@@ -96,6 +97,14 @@
     button.unhide  { background: var(--btn-unhide);  color:#fff; }
 
     /* Keep .bad special-case hover, others use brightness filter */
+    
+    /* Explicit hover styles for all variants (more visible than filter) */
+    button.primary:hover { background: #247ad9; }  /* darker than --accent #2b8cff */
+    button.ok:hover      { background: #166f2f; }  /* darker than --ok #1b8a3a */
+    button.next:hover    { background: #0b245a; }  /* darker than --next #0d2c6d */
+    button.restart:hover { background: #92232d; }  /* darker than restart #b02a37 */
+    button.unhide:hover  { background: #166f2f; }  /* darker than unhide #1b8a3a */
+    
     button.bad:hover{ background: var(--btn-bad-hover); color:#fff; }
 
     .q{font-size: clamp(18px, 3.2vw, 22px); font-weight:700;}
@@ -143,6 +152,7 @@
   </style>
 </head>
 <body>
+  <!-- Body: topbar, layout grid, panels -->
   <div class="topbar">
     <div class="leftGroup">
       <button id="menuBtn" class="hamburger" aria-label="Toggle categories" aria-controls="catDrawer" aria-expanded="false">
@@ -209,6 +219,8 @@
   </div>
 
   <script>
+    // Script: app state, UI handlers, data loading
+
     document.addEventListener('touchstart', function(){}, {passive:true});
 
     const $  = (s) => document.querySelector(s);
