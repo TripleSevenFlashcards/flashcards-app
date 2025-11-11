@@ -1,532 +1,395 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <!--
-    Application: Triple Seven Aviation Flashcards
-    File: index.html
-    Purpose: Frontend UI to study flashcards fetched from /api/cards.
-    IMPORTANT: This version only adds comments. No behavior, layout, or styles changed.
-  -->
   <meta charset="utf-8" />
   <title>Flashcards</title>
-  <!-- Viewport: mobile-safe sizing; supports iPhone safe areas via CSS env() -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* =============================
-       THEME CONSTANTS (CSS variables)
-       Update colors here to theme the app.
-       ============================= */
     :root{
-      --bg1:#0c2146;   /* gradient start (background) */
-      --bg2:#0f356e;   /* gradient end   (background) */
-      --panel:#ffffff; /* white panel surface for cards/sidebars */
-      --accent:#2b8cff;/* primary action color (Show Answer) */
-      --text:#0a0a0a;  /* default dark text on white panels */
-      --muted:#5c646d; /* secondary/subtle text color */
-      --ok:#1b8a3a;    /* success / "I Know" button */
-      --bad:#b02a37;   /* strong red used for danger/restart hover */
-      --next:#0d2c6d;  /* navigation buttons (Prev/Next) */
+      --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
+      --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
     }
-
-    /* =============================
-       PAGE BASELINE & TYPOGRAPHY
-       - Full-height layout
-       - System font stack
-       - Decorative gradient background
-       - iPhone tap/zoom niceties
-       ============================= */
     html,body{height:100%}
     body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      /* Background: radial highlight + linear gradient */
-      background:
-        radial-gradient(1200px 600px at 20% -10%, #1a3d7a 0%, transparent 60%),
-        linear-gradient(135deg,var(--bg1),var(--bg2));
-      color:#fff; /* text on the gradient (outside panels) */
-      display:flex; flex-direction:column; align-items:center;
-
-      /* iPhone safety + UX */
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: calc(env(safe-area-inset-bottom) + 0px);
-      -webkit-text-size-adjust: 100%;
-      -webkit-tap-highlight-color: transparent; /* remove iOS tap flash */
+      margin:0; font-family: system-ui, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1a3f80 0%, transparent 60%), linear-gradient(135deg,var(--bg1),var(--bg2));
+      color:#fff; display:flex; flex-direction:column; align-items:center;
     }
 
-    /* =============================
-       TOP BAR (brand + hamburger on mobile)
-       ============================= */
-    .topbar{
-      width:100%; max-width:1100px;
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px; padding:12px 16px;
-    }
-    .leftGroup{display:flex; align-items:center; gap:10px}
-    .logo{height:36px}                       /* logo image height */
-    .brand{font-size:18px; font-weight:700; letter-spacing:.2px} /* app name */
-    .hamburger{                               /* drawer toggle (hidden on desktop) */
-      display:none; align-items:center; justify-content:center;
-      width:44px; height:44px; border-radius:8px; border:2px solid rgba(255,255,255,.25);
-      background:rgba(255,255,255,.08); color:#fff; cursor:pointer;
-    }
-    .hamburger:focus{outline:2px solid #88b4ff; outline-offset:2px}
+    /* Tight top bar */
+    .topbar{width:100%; max-width:1100px; display:flex; align-items:center; gap:10px; padding:12px 16px;}
+    .logo{height:36px}
+    .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
 
-    /* =============================
-       MAIN GRID LAYOUT
-       - 2 columns desktop: left filter panel, right study panel
-       ============================= */
+    /* Grid */
     .wrap{
       width:100%; max-width:1100px;
       display:grid; grid-template-columns: 280px 1fr; gap:14px;
       padding:0 16px 16px;
     }
 
-    /* =============================
-       PANEL STYLING (shared)
-       - white card surface inside gradient background
-       ============================= */
     .panel{
       background:var(--panel); color:var(--text);
       border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      max-height: calc(100svh - 140px); /* constrained for full-height layouts */
-      overflow:auto; border: none;
+      max-height: calc(100vh - 140px);
+      overflow:auto;
+      /* no black outline on panels */
+      border: none;
     }
 
-    /* Panel content padding / right panel column layout */
     .left{padding:12px; display:flex; flex-direction:column;}
     .right{padding:16px; min-height:320px; display:flex; flex-direction:column;}
 
-    /* Section headings + muted text utility */
-    .sectionTitle{font-weight:700; margin:6px 0 10px}
     .muted{color:var(--muted); font-size:13px}
+    .sectionTitle{font-weight:700; margin:6px 0 10px}
 
-    /* =============================
-       CATEGORY LIST (left panel)
-       - scrollable area of checkboxes
-       ============================= */
-    .catlist{display:flex; flex-direction:column; gap:4px; max-height:40svh; overflow:auto; padding-right:6px}
+    .catlist{display:flex; flex-direction:column; gap:4px; max-height:40vh; overflow:auto; padding-right:6px}
     .checkboxline{display:flex; gap:6px; align-items:center}
     .checkboxline span{font-size:13px; line-height:1.15}
 
-    /* =============================
-       STATS CHIPS (left panel)
-       ============================= */
     .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
     .chip{
-      background:#0c2146; color:#e8f1ff; border:1px solid #2a4f8a;
-      padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;
+      background:#eef3ff; color:#0b2c5a;
+      border:1px solid #cfe0ff;               /* light outline */
+      border-radius:999px; padding:6px 10px; font-size:12px
     }
 
-    /* =============================
-       BUTTONS (shared + variants)
-       - base sizing + hover feedback
-       - color variants mapped to actions
-       ============================= */
+    /* Buttons: slightly smaller & narrower, ALL with black outline */
     .btnrow{display:flex; gap:10px; flex-wrap:wrap}
     button{
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
-      cursor:pointer; border:2px solid transparent; outline:0;
-      min-height:48px;
+      cursor:pointer; text-transform:capitalize; border:2px solid #000; /* black outline */
     }
-    button:focus{outline:2px solid #88b4ff; outline-offset:2px}
-    button:hover{filter:brightness(0.98)} /* mild universal hover */
+    button.primary{background:var(--accent); color:#fff;}
+    button.primary:hover{filter:brightness(0.95);}
+    button.ok{background:var(--ok); color:#fff;}
+    button.ok:hover{filter:brightness(0.95);}
+    button.bad{background:#ffcccc; color:#000;}
+    button.bad:hover{background:#b02a37; color:#fff;}
+    button.next{background:var(--next); color:#fff;}
+    button.next:hover{filter:brightness(0.9);}
+    button.restart{background:#b02a37; color:#fff;}
+    button.restart:hover{filter:brightness(0.9);}
+    button.unhide{background:#1b8a3a; color:#fff;}
+    button.unhide:hover{filter:brightness(0.9);}
+    /* Hide Card: requested #435663 with black outline */
+    button.hidecard{background:#435663; color:#fff;}
 
-    /* Color variants for key actions */
-    button.primary{background:var(--accent); color:#fff;}  /* "Show Answer" */
-    button.ok{background:var(--ok); color:#fff;}           /* "I Know" */
-    button.bad{background:#ffcccc; color:#000;}            /* "Don't Know" (light red) */
-    button.bad:hover{background:#b02a37; color:#fff;}      /* stronger red on hover for clarity */
-    button.next{background:var(--next); color:#fff;}       /* Prev/Next */
-    button.restart{background:#b02a37; color:#fff;}        /* Clear/Shuffle */
-    button.unhide{background:#1b8a3a; color:#fff;}         /* Unhide All */
-
-    /* =============================
-       FLASHCARD CONTENT AREA (right panel)
-       ============================= */
-    .q{font-size: clamp(18px, 3.2vw, 22px); font-weight:700;} /* responsive question */
-    .a{ /* answer box; hidden until "Show Answer" */
-      display:none; color:#1d2630; background:#f6f8fb;
-      border:1px dashed #d9e1ee; border-radius:10px; padding:14px; white-space:pre-wrap
+    #card{
+      flex:1;
+      border:1px solid #e3e8ef;              /* restore light border */
+      border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
     }
+    .q{font-size:20px; font-weight:700}
 
-    /* Optional image containers (question/answer) — hidden until image loads */
+    /* Image boxes with light outline */
     .imgbox{
-      background:#f1f4fa; border: 1px solid #d4ddec;
+      width:6in; height:auto; max-width:100%;
+      background:#f6f8fb; border:1px solid #d9e1ee; /* light border */
       border-radius:10px; display:none; overflow:hidden; margin-top:8px;
     }
     .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
 
-    /* Wrapper that holds answer content when visible */
-    .answrap{display:none; flex-direction:column; gap:10px;}
-
-    /* Bottom control row with prev/next and grading buttons */
-    .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
-    .grow{flex:1;} /* flex spacer so center buttons expand */
-    footer{margin:10px 0 20px; font-size:12px; color:#b7c2d6}
-
-    /* =============================
-       RESPONSIVE (<= 860px)
-       - Left panel becomes slide-in drawer with scrim/backdrop
-       ============================= */
-    @media (max-width: 860px){
-      .wrap{grid-template-columns: 1fr;}
-      .hamburger{display:inline-flex;} /* show hamburger on mobile */
-      .panel.left{
-        position: fixed; top:0; left:0; bottom:0;
-        width:min(86vw, 360px);
-        transform: translateX(-100%);   /* hidden off-screen by default */
-        transition: transform .25s ease;
-        z-index: 50;
-        padding-top: calc(env(safe-area-inset-top) + 12px);
-        padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
-        max-height: none;
-        border-top-right-radius: 16px; border-bottom-right-radius: 16px;
-      }
-      .panel.left.open{ transform: translateX(0); } /* visible drawer */
-      .catlist{ max-height: 70svh; }                /* taller list on small screens */
-      .scrim{ /* page overlay behind drawer */
-        display:none; position:fixed; inset:0;
-        background: rgba(0,0,0,.40); z-index: 40;
-      }
-      .scrim.show{ display:block; }                 /* shown when drawer is open */
-      body.no-scroll{ overflow:hidden; }            /* lock scroll when drawer is open */
+    .a{
+      display:none; color:#1d2630; background:#f6f8fb;
+      border:1px dashed #d9e1ee;             /* light dashed border */
+      border-radius:10px; padding:14px; white-space:pre-wrap
     }
+
+    .small{font-size:12px}
+    .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
+    .linkrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .extlink{
+      display:inline-flex; align-items:center; gap:6px;
+      background:#e8f1ff; color:#0b2c5a;
+      border:1px solid #cfe0ff;               /* light outline */
+      border-radius:8px; padding:6px 10px;
+      text-decoration:none; font-weight:600;
+    }
+    .extlink:hover{background:#dceaff}
+    .answrap{display:none; flex-direction:column; gap:10px;}
+    .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
+    .hidebtn:hover{filter:brightness(0.95);}
+
+    /* Bottom controls layout */
+    .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
+    .grow{flex:1;}
   </style>
 </head>
 <body>
-  <!-- =============================
-       TOP BAR: brand + hamburger (mobile only)
-       ============================= -->
   <div class="topbar">
-    <div class="leftGroup">
-      <!-- Drawer toggle button: controls #catDrawer; aria-expanded toggled in JS -->
-      <button id="menuBtn" class="hamburger" aria-label="Toggle categories" aria-controls="catDrawer" aria-expanded="false">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-      <!-- Brand logo + name -->
-      <img class="logo" src="/static/logo.jpg" alt="logo">
-      <div class="brand">Triple Seven Aviation Flashcards</div>
-    </div>
+    <img class="logo" src="/static/logo.jpg" alt="logo">
+    <div class="brand">Triple Seven Aviation Flashcards</div>
   </div>
 
-  <!-- Scrim/backdrop shown behind the drawer on mobile -->
-  <div id="scrim" class="scrim" hidden></div>
-
-  <!-- =============================
-       MAIN GRID: Left (filters), Right (flashcards)
-       ============================= -->
   <div class="wrap">
-    <!-- LEFT PANEL: categories, session controls, stats -->
-    <div id="catDrawer" class="panel left" role="dialog" aria-label="Categories" aria-modal="true" tabindex="-1">
+    <div class="panel left">
       <div class="sectionTitle">Categories</div>
-      <!-- Dynamic checkbox list is inserted here by buildCategoryUI() -->
       <div id="categories" class="catlist"></div>
 
       <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
       <div class="btnrow">
-        <!-- Shuffle deck & clear hidden set -->
-        <button id="restart" class="restart">Clear/Shuffle</button>
-        <!-- Unhide all cards (clear hiddenIds) -->
-        <button id="unhide" class="unhide">Unhide All</button>
+        <button id="restart" class="restart" title="Clear progress and reshuffle the deck.">Restart (Clear & Shuffle)</button>
+        <button id="unhide" class="unhide" title="Unhide all previously hidden cards.">Show Hidden Again</button>
       </div>
 
       <div class="sectionTitle" style="margin-top:10px;">Stats</div>
-      <div class="statline">
-        <!-- Stats updated by refilter(): total/filtered/hidden counts -->
-        <span class="chip" id="statTotal">Total: 0</span>
-        <span class="chip" id="statFiltered">Filtered: 0</span>
-        <span class="chip" id="statHidden">Hidden: 0</span>
+      <div id="stats" class="statline">
+        <span class="chip">Answered: <b id="s-seen">0</b></span>
+        <span class="chip">Correct: <b id="s-ok">0</b></span>
+        <span class="chip">Incorrect: <b id="s-wrong">0</b></span>
+        <span class="chip">Accuracy: <b id="s-acc">0%</b></span>
       </div>
-
-      <!-- Status text for load errors/success -->
-      <div class="muted" id="status">Loading…</div>
+      <div class="muted small">Stats only count cards in the categories currently checked.</div>
     </div>
 
-    <!-- RIGHT PANEL: flashcard content -->
     <div class="panel right">
-      <!-- Current category name -->
-      <div id="qcat" class="muted"></div>
-      <!-- Question text -->
-      <div class="q" id="q">…</div>
-
-      <!-- Optional question image (shows once loaded) -->
-      <div class="imgbox" id="qimgbox"><img id="qimg" alt=""></div>
-
-      <!-- Answer container (text + optional image) -->
-      <div class="answrap" id="answrap">
-        <div class="a" id="ans"></div>
-        <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
-      </div>
-
-      <!-- Bottom controls: prev/show/know/don't/next -->
-      <div class="controls-row" style="margin-top:10px;">
-        <button id="prev" class="next">Prev</button>
-        <div class="btnrow grow">
-          <button id="show" class="primary">Show Answer</button>
-          <button id="correct" class="ok">I Know</button>
-          <button id="wrong" class="bad">Don't Know</button>
+      <div id="status" class="muted">Loading deck…</div>
+      <div id="card">
+        <div id="qwrap">
+          <div class="q" id="qtext"></div>
+          <div id="qimgbox" class="imgbox"><img id="qimg" alt=""></div>
+          <div class="linkrow" id="linkrow" style="display:none">
+            <a id="qurl" class="extlink" target="_blank" rel="noopener">Open Additional Resources</a>
+          </div>
         </div>
-        <button id="next" class="next">Next</button>
-      </div>
 
-      <!-- Progress indicator (e.g., "3 / 20") -->
-      <footer><div id="progress" class="muted">0 / 0</div></footer>
+        <div class="answrap" id="answrap">
+          <div class="a" id="ans"></div>
+          <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
+        </div>
+
+        <div class="controls-row">
+          <button id="prev" class="next" title="Go to the previous card.">Previous</button>
+
+          <div class="btnrow">
+            <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
+            <button id="correct" class="ok" title="Mark this card correct and move on.">I Knew It</button>
+            <button id="wrong" class="bad" title="Mark this card wrong and move on.">I Missed It</button>
+            <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide Card</button>
+          </div>
+
+          <div class="grow"></div>
+
+          <button id="next" class="next" title="Skip to the next card without marking.">Next</button>
+        </div>
+
+        <div class="footerline small">
+          <div id="footcat" class="muted"></div>
+          <div id="pos" class="muted"></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    // =============================
-    // TOUCH ENABLEMENT (iOS quirk)
-    // =============================
-    // An empty 'touchstart' enables better scroll/tap handling on iOS.
-    document.addEventListener('touchstart', function(){}, {passive:true});
+    const statusEl = document.getElementById('status');
+    const qText = document.getElementById('qtext');
+    const qImg  = document.getElementById('qimg');
+    const qImgBox = document.getElementById('qimgbox');
+    const linkRow = document.getElementById('linkrow');
+    const qUrl = document.getElementById('qurl');
+    const ansWrap = document.getElementById('answrap');
+    const ansEl = document.getElementById('ans');
+    const aImg  = document.getElementById('aimg');
+    const aImgBox = document.getElementById('aimgbox');
+    const posEl = document.getElementById('pos');
+    const footCat = document.getElementById('footcat');
+    const catsEl = document.getElementById('categories');
 
-    // =============================
-    // DOM HELPERS
-    // =============================
-    // $:  query first element by CSS selector
-    // $$: query all elements, convert NodeList to Array
-    const $  = (s) => document.querySelector(s);
-    const $$ = (s) => Array.from(document.querySelectorAll(s));
+    const sSeen = document.getElementById('s-seen');
+    const sOk = document.getElementById('s-ok');
+    const sWrong = document.getElementById('s-wrong');
+    const sAcc = document.getElementById('s-acc');
 
-    // =============================
-    // ELEMENT REFERENCES (cache common nodes)
-    // =============================
-    const statusEl = $('#status');                // status text in left panel
-    const qEl = $('#q'), ansEl = $('#ans');      // question/answer text nodes
-    const qcatEl = $('#qcat');                    // category label
-    const qimg = $('#qimg'), qimgbox = $('#qimgbox');  // question image + wrapper
-    const aimg = $('#aimg'), aimgbox = $('#aimgbox');  // answer image + wrapper
-    const answrap = $('#answrap');                // answer container
-    const statTotal = $('#statTotal');            // "Total: N"
-    const statFiltered = $('#statFiltered');      // "Filtered: N"
-    const statHidden = $('#statHidden');          // "Hidden: N"
-    const progress = $('#progress');              // "i / N"
+    const showBtn = document.getElementById('show');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const hideBtn = document.getElementById('hideCardBtn');
 
-    const categoriesEl = $('#categories');        // container for category checkboxes
-    const btnRestart = $('#restart');             // Clear/Shuffle
-    const btnUnhide = $('#unhide');               // Unhide All
-    const btnPrev = $('#prev');                   // previous card
-    const btnNext = $('#next');                   // next card
-    const btnShow = $('#show');                   // toggle answer
-    const btnOk = $('#correct');                  // "I Know"
-    const btnBad = $('#wrong');                   // "Don't Know"
+    let fullDeck = [], categories = [], selectedCats = new Set(), hiddenIds = new Set(JSON.parse(localStorage.getItem('hiddenIds')||'[]'));
+    let progress = JSON.parse(localStorage.getItem('progress')||'{"ok":{},"seen":{}}');
+    let idx = 0, filtered = [];
 
-    // Drawer elements for mobile
-    const drawer = $('#catDrawer');               // left panel that slides in
-    const scrim  = $('#scrim');                   // dark overlay under drawer
-    const menuBtn = $('#menuBtn');                // hamburger toggle
+    function normCard(c,i){
+      return {
+        id: c.id ?? i,
+        q:  c.question ?? c.q ?? '',
+        a:  c.answer ?? c.a ?? '',
+        image: c.image ?? '',
+        answer_image: c.answer_image ?? '',
+        url: (c.url ?? '').toString().trim(),
+        category: (c.category ?? c.subject ?? '').toString()
+      };
+    }
+    function uniqCats(deck){return Array.from(new Set(deck.map(c=>c.category).filter(Boolean))).sort();}
+    function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
 
-    // =============================
-    // APPLICATION STATE
-    // =============================
-    let fullDeck = [];    // all cards loaded from the server
-    let deck = [];        // filtered subset of fullDeck
-    let cats = [];        // unique category names
-    let idx = 0;          // current index within 'deck'
-    let showing = false;  // whether the answer is visible
-    let hiddenIds = new Set(); // IDs of cards hidden by user (if used later)
+    function saveHidden(){localStorage.setItem('hiddenIds',JSON.stringify([...hiddenIds]));}
+    function saveProgress(){localStorage.setItem('progress',JSON.stringify(progress));}
 
-    // =============================
-    // UTILITIES
-    // =============================
-    // uniq: remove duplicates while preserving order of first appearance
-    const uniq = (arr) => [...new Set(arr)];
-
-    // normCard: normalize a raw card object from API to expected shape
-    // Ensures missing fields are replaced with safe defaults.
-    const normCard = (c) => ({
-      id: c.id,
-      category: c.category || 'General',
-      question: c.question || '',
-      answer: c.answer || '',
-      // EXACT image fields from backend; empty string -> "no image"
-      image: c.image || '',
-      answer_image: c.answer_image || ''
-    });
-
-    // =============================
-    // buildCategoryUI: render the list of category checkboxes.
-    // Registers a single 'change' listener that refilters + re-renders.
-    // =============================
     function buildCategoryUI(){
-      categoriesEl.innerHTML = '';
-      cats.forEach(cat => {
-        const line = document.createElement('label');
-        line.className = 'checkboxline';
-        line.innerHTML = `
-          <input type="checkbox" data-cat value="${cat}" checked />
-          <span>${cat}</span>
-        `;
-        categoriesEl.appendChild(line);
+      catsEl.innerHTML='';
+      categories.forEach(cat=>{
+        const row=document.createElement('label');row.className='checkboxline';
+        row.innerHTML=`<input type="checkbox" data-cat="${cat}" checked><span>${cat}</span>`;
+        catsEl.appendChild(row);
       });
-      // When any checkbox changes, rebuild deck -> reset index -> re-render
-      categoriesEl.addEventListener('change', () => {
-        refilter(); idx = 0; showing = false; render();
-      }, {once:true}); // listener is attached once since the list is static per load
+      selectedCats=new Set(categories);
+      catsEl.onchange=e=>{
+        if(e.target.matches('input[data-cat]')){
+          const cat=e.target.getAttribute('data-cat');
+          if(e.target.checked) selectedCats.add(cat); else selectedCats.delete(cat);
+          refilter(); render();
+        }
+      };
     }
 
-    // =============================
-    // refilter: rebuild 'deck' from 'fullDeck'
-    // Criteria: category must be checked AND not hidden by user
-    // Also updates stat chips.
-    // =============================
     function refilter(){
-      const chosen = $$('input[data-cat]:checked').map(i => i.value);
-      deck = fullDeck.filter(c => chosen.includes(c.category) && !hiddenIds.has(c.id));
-      statTotal.textContent    = 'Total: '    + fullDeck.length;
-      statFiltered.textContent = 'Filtered: ' + deck.length;
-      statHidden.textContent   = 'Hidden: '   + hiddenIds.size;
+      filtered=fullDeck.filter(c=>(!c.category||selectedCats.has(c.category))&&!hiddenIds.has(String(c.id)));
+      if(idx>=filtered.length) idx=0; updateStats();
     }
 
-    // =============================
-    // render: display current card and progress
-    // - Handles empty-deck case
-    // - Binds text & images
-    // - Controls answer visibility & button label
-    // =============================
+    function updateStats(){
+      let seen=0,ok=0;
+      filtered.forEach(c=>{const id=String(c.id);if(progress.seen[id])seen++;if(progress.ok[id])ok++;});
+      const wrong = Math.max(seen - ok, 0);
+      sSeen.textContent=seen; sOk.textContent=ok; sWrong.textContent=wrong;
+      sAcc.textContent=seen?Math.round((ok/seen)*100)+'%':'0%';
+    }
+
+    function isHttpUrl(u){return /^https?:\/\//i.test(u);}
+
+    function resetAnswerHiddenUI(){
+      ansEl.style.display='none';
+      aImgBox.style.display='none';
+      aImg.removeAttribute('src'); aImg.removeAttribute('alt');
+      ansWrap.style.display='none';
+      showBtn.textContent='Show Answer';
+      showBtn.classList.add('primary');
+      showBtn.classList.remove('hidebtn');
+    }
+
     function render(){
-      if (!deck.length){
-        qEl.textContent = 'No cards match your filters.';
-        answrap.style.display='none';
-        progress.textContent='0 / 0';
-        qimgbox.style.display='none';
-        aimgbox.style.display='none';
+      if(!filtered.length){
+        qText.textContent="No cards match filters.";
+        qImgBox.style.display='none';
+        linkRow.style.display='none';
+        resetAnswerHiddenUI();
+        posEl.textContent=''; footCat.textContent='';
+        prevBtn.style.display='none';
+        nextBtn.style.display='none';
         return;
       }
-      const c = deck[idx];
+      const c=filtered[idx];
+      qText.textContent = c.q || '';
 
-      // Bind text fields
-      qcatEl.textContent = c.category;
-      qEl.textContent = c.question || '';
-      ansEl.textContent = c.answer || '';
-
-      // Question image: show wrapper once image loads; hide on error
-      const qsrc = c.image || '';
-      if (qsrc){
-        qimg.src = qsrc;
-        qimg.onload  = () => { qimgbox.style.display = 'block'; };
-        qimg.onerror = () => { qimgbox.style.display = 'none'; };
+      if (c.image){
+        qImg.src = c.image;
+        qImg.alt = c.q ? `Front image — ${c.q}` : 'Front image';
+        qImgBox.style.display = 'block';
       } else {
-        qimgbox.style.display = 'none';
+        qImgBox.style.display='none';
+        qImg.removeAttribute('src'); qImg.removeAttribute('alt');
       }
 
-      // Answer image: same logic as question image
-      const asrc = c.answer_image || '';
-      if (asrc){
-        aimg.src = asrc;
-        aimg.onload  = () => { aimgbox.style.display = 'block'; };
-        aimg.onerror = () => { aimgbox.style.display = 'none'; };
+      if (c.url && isHttpUrl(c.url)){
+        qUrl.href = c.url;
+        qUrl.textContent = 'Open Related Resource';
+        linkRow.style.display = '';
       } else {
-        aimgbox.style.display = 'none';
+        linkRow.style.display='none';
+        qUrl.removeAttribute('href');
       }
 
-      // Answer visibility + button label
-      answrap.style.display = showing ? 'flex' : 'none';
-      btnShow.textContent = showing ? 'Hide Answer' : 'Show Answer';
+      resetAnswerHiddenUI();
+      footCat.textContent=c.category?`Category: ${c.category}`:'Category: —';
+      posEl.textContent=`Card ${idx+1} of ${filtered.length}`;
 
-      // Progress display "current / total"
-      progress.textContent = (idx+1) + ' / ' + deck.length;
+      prevBtn.style.display = idx===0 ? 'none' : '';
+      nextBtn.style.display = idx===filtered.length-1 ? 'none' : '';
     }
 
-    // =============================
-    // clamp: constrain number to [lo, hi]
-    // =============================
-    const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-
-    // =============================
-    // BUTTON HANDLERS
-    // =============================
-    // Toggle showing the answer
-    btnShow.onclick = () => { showing = !showing; render(); };
-    // Next/Prev navigation resets "showing" to hide the answer
-    btnNext.onclick = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-    btnPrev.onclick = () => { idx = clamp(idx-1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-    // Marking known/unknown currently just advances one card
-    btnOk.onclick   = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-    btnBad.onclick  = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-
-    // =============================
-    // SESSION CONTROLS
-    // =============================
-    // Shuffle fullDeck in-place (Fisher–Yates), then rebuild & reset
-    btnRestart.onclick = () => {
-      for (let i = fullDeck.length-1; i > 0; i--) {
-        const j = Math.floor(Math.random()*(i+1));
-        [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]];
+    // Show/Hide Answer toggle
+    showBtn.onclick=()=>{
+      if(!filtered.length) return;
+      const currentlyVisible = ansWrap.style.display !== 'none' && (ansEl.style.display === 'block' || aImgBox.style.display !== 'none');
+      if (currentlyVisible) {
+        resetAnswerHiddenUI();
+      } else {
+        const c=filtered[idx];
+        let anything=false;
+        if (c.a){
+          ansEl.style.display='block';
+          ansWrap.style.display='flex';
+          anything=true;
+        }
+        if (c.answer_image){
+          aImg.src = c.answer_image;
+          aImg.alt = c.q ? `Back image — ${c.q}` : 'Back image';
+          aImgBox.style.display = 'block';
+          ansWrap.style.display='flex';
+          anything=true;
+        }
+        if(!anything){
+          ansWrap.style.display='flex';
+          ansEl.style.display='block';
+          ansEl.textContent='(No answer provided)';
+        }
+        showBtn.textContent='Hide Answer';
+        showBtn.classList.add('hidebtn');
+        showBtn.classList.remove('primary');
       }
-      refilter(); idx = 0; showing = false; render();
     };
-    // Clear hiddenIds, then rebuild and reset
-    btnUnhide.onclick = () => { hiddenIds.clear(); refilter(); idx = 0; showing = false; render(); };
 
-    // =============================
-    // DRAWER (mobile) OPEN/CLOSE BEHAVIOR
-    // =============================
-    function openDrawer(){
-      drawer.classList.add('open');
-      scrim.classList.add('show');
-      scrim.hidden = false;
-      document.body.classList.add('no-scroll');
-      menuBtn.setAttribute('aria-expanded','true');
-      drawer.focus();
-    }
-    function closeDrawer(){
-      drawer.classList.remove('open');
-      scrim.classList.remove('show');
-      scrim.hidden = true;
-      document.body.classList.remove('no-scroll');
-      menuBtn.setAttribute('aria-expanded','false');
-      menuBtn.focus();
-    }
-    // Toggle with hamburger; click scrim or press Escape to close
-    menuBtn.addEventListener('click', () => {
-      if (drawer.classList.contains('open')) closeDrawer(); else openDrawer();
-    });
-    scrim.addEventListener('click', closeDrawer);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer(); });
+    // Navigation & grading
+    nextBtn.onclick=()=>{if(filtered.length){idx=Math.min(idx+1, filtered.length-1);render();}};
+    prevBtn.onclick=()=>{if(filtered.length){idx=Math.max(idx-1, 0);render();}};
+    document.getElementById('correct').onclick=()=>{if(filtered.length){const id=String(filtered[idx].id);progress.ok[id]=true;progress.seen[id]=true;saveProgress();updateStats();nextBtn.click();}};
+    document.getElementById('wrong').onclick=()=>{if(filtered.length){const id=String(filtered[idx].id);delete progress.ok[id];progress.seen[id]=true;saveProgress();updateStats();nextBtn.click();}};
 
-    // =============================
-    // SWIPE NAVIGATION (mobile convenience)
-    // =============================
-    // Swipe left => Next, Swipe right => Prev.
-    let startX=null;
-    document.addEventListener('touchstart', e => { startX = e.changedTouches[0].clientX; }, {passive:true});
-    document.addEventListener('touchend', e => {
-      const dx = e.changedTouches[0].clientX - (startX ?? 0);
-      if (Math.abs(dx) > 40) { if (dx < 0) btnNext.click(); else btnPrev.click(); }
-    }, {passive:true});
+    // Hide Card button
+    hideBtn.onclick=()=>{
+      if(!filtered.length) return;
+      const id=String(filtered[idx].id);
+      hiddenIds.add(id);
+      saveHidden();
+      statusEl.textContent='Card hidden.';
+      refilter();
+      if(filtered.length){
+        idx=Math.min(idx, filtered.length-1);
+        render();
+      }else{
+        render();
+      }
+    };
 
-    // =============================
-    // INITIALIZATION: fetch data and render first card
-    // =============================
-    (async function init(){
+    // Session controls
+    document.getElementById('restart').onclick=()=>{
+      progress={ok:{},seen:{}}; saveProgress();
+      hiddenIds=new Set(); saveHidden();
+      shuffle(fullDeck); refilter(); idx=0; render();
+      statusEl.textContent='Session restarted.';
+    };
+    document.getElementById('unhide').onclick=()=>{
+      hiddenIds=new Set(); saveHidden(); refilter(); render();
+      statusEl.textContent='All hidden cards are now visible.';
+    };
+
+    // Boot
+    (async function boot(){
+      statusEl.textContent='Loading deck…';
       try{
-        // GET /api/cards -> returns either an array of cards or {cards:[...]}
-        const res = await fetch('/api/cards', {cache:'no-store'});
-        const data = await res.json();
-
-        // Normalize payload and verify content
-        fullDeck = (Array.isArray(data) ? data : (data.cards || [])).map(normCard);
-        if (!fullDeck.length) throw new Error('No cards in cards.json');
-
-        // Build filters and first render
-        cats = uniq(fullDeck.map(c => c.category));
-        buildCategoryUI();
-        refilter(); idx = 0; showing = false; render();
-
-        // Report success in left panel
-        statusEl.textContent = `Loaded ${fullDeck.length} cards.`;
+        const res=await fetch('/api/cards',{cache:'no-store'});
+        const data=await res.json();
+        fullDeck=(Array.isArray(data)?data:data.cards||[]).map(normCard);
+        if(!fullDeck.length) throw new Error('No cards in cards.json');
+        categories=uniqCats(fullDeck); buildCategoryUI();
+        refilter(); idx=0; render();
+        statusEl.textContent=`Loaded ${fullDeck.length} cards.`;
       }catch(e){
-        // Graceful error message
-        statusEl.textContent = 'Failed to load cards: ' + e.message;
-        qEl.textContent = 'Loading failed.';
+        statusEl.textContent='Failed to load cards: '+e.message;
+        qText.textContent='Loading failed.';
       }
     })();
   </script>
