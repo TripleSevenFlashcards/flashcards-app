@@ -9,7 +9,6 @@
     :root{
       --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
       --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
-      --btnw: 120px; /* uniform button width */
     }
 
     html,body{height:100%}
@@ -80,7 +79,6 @@
     button:focus{outline:2px solid #88b4ff; outline-offset:2px}
     button:hover{filter:brightness(0.98)}
 
-    /* Existing color classes retained (but we'll use .u-btn to standardize visuals per your request) */
     button.primary{background:var(--accent); color:#fff;}
     button.ok{background:var(--ok); color:#fff;}
     button.bad{background:#ffcccc; color:#000;}
@@ -88,12 +86,6 @@
     button.next{background:var(--next); color:#fff;}
     button.restart{background:#b02a37; color:#fff;}
     button.unhide{background:#1b8a3a; color:#fff;}
-
-    /* Scoped utility: uniform, narrower, light grey with black text */
-    .u-btn{
-      background:#e5e7eb; color:#000; border:1px solid #d1d5db;
-      min-height:40px; padding:6px 10px; width:var(--btnw);
-    }
 
     .q{font-size: clamp(18px, 3.2vw, 22px); font-weight:700;}
     .a{
@@ -165,8 +157,8 @@
 
       <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
       <div class="btnrow">
-        <button id="restart" class="restart u-btn">Restart (Clear & Shuffle)</button>
-        <button id="unhide" class="unhide u-btn">Unhide All</button>
+        <button id="restart" class="restart">Restart (Clear & Shuffle)</button>
+        <button id="unhide" class="unhide">Unhide All</button>
       </div>
 
       <div class="sectionTitle" style="margin-top:10px;">Stats</div>
@@ -192,14 +184,13 @@
       </div>
 
       <div class="controls-row" style="margin-top:10px;">
-        <button id="prev" class="next u-btn">Previous</button>
+        <button id="prev" class="next">Previous</button>
         <div class="btnrow grow">
-          <button id="show" class="primary u-btn">Show Answer</button>
-          <button id="hide" class="u-btn">Hide Slide</button>
-          <button id="correct" class="ok u-btn">I Knew It</button>
-          <button id="wrong" class="bad u-btn">I Didn’t Know</button>
+          <button id="show" class="primary">Show Answer</button>
+          <button id="correct" class="ok">I Knew It</button>
+          <button id="wrong" class="bad">I Didn’t Know</button>
         </div>
-        <button id="next" class="next u-btn">Next</button>
+        <button id="next" class="next">Next</button>
       </div>
 
       <footer><div id="progress" class="muted">0 / 0</div></footer>
@@ -223,7 +214,6 @@
     const categoriesEl = $('#categories');
     const btnRestart = $('#restart'), btnUnhide = $('#unhide');
     const btnPrev = $('#prev'), btnNext = $('#next'), btnShow = $('#show'), btnOk = $('#correct'), btnBad = $('#wrong');
-    const btnHide = $('#hide');
 
     // Drawer
     const drawer = $('#catDrawer');
@@ -254,10 +244,10 @@
       cats.forEach(cat => {
         const line = document.createElement('label');
         line.className = 'checkboxline';
-        line.innerHTML = \`
-          <input type="checkbox" data-cat value="\${cat}" checked />
-          <span>\${cat}</span>
-        \`;
+        line.innerHTML = `
+          <input type="checkbox" data-cat value="${cat}" checked />
+          <span>${cat}</span>
+        `;
         categoriesEl.appendChild(line);
       });
       categoriesEl.addEventListener('change', () => {
@@ -313,17 +303,6 @@
     btnOk.onclick   = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
     btnBad.onclick  = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
 
-    // New: Hide Slide
-    btnHide.onclick = () => {
-      if (!deck.length) return;
-      const cur = deck[idx];
-      hiddenIds.add(cur.id);
-      refilter();
-      idx = Math.min(idx, Math.max(0, deck.length-1));
-      showing = false;
-      render();
-    };
-
     btnRestart.onclick = () => {
       for (let i = fullDeck.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]]; }
       refilter(); idx = 0; showing = false; render();
@@ -367,7 +346,7 @@
         cats = uniq(fullDeck.map(c => c.category));
         buildCategoryUI();
         refilter(); idx = 0; showing = false; render();
-        statusEl.textContent = \`Loaded \${fullDeck.length} cards.\`;
+        statusEl.textContent = `Loaded ${fullDeck.length} cards.`;
       }catch(e){
         statusEl.textContent = 'Failed to load cards: ' + e.message;
         qEl.textContent = 'Loading failed.';
