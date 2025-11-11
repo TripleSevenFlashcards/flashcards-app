@@ -1,62 +1,31 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!--
-    Page: Flashcards Web App
-    Purpose: Study interface with categories, stats, and flashcard viewer.
-    Notes:
-      - Comments added throughout for a basic programmer to follow.
-      - No functional changes—only documentation via comments.
-  -->
   <meta charset="utf-8" />
   <title>Flashcards</title>
-
-  <!-- Viewport for mobile (iPhone safe areas supported via env() in CSS) -->
+  <!-- iPhone-safe viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
   <style>
-    /* =============================
-       THEME TOKENS (CSS variables)
-       =============================
-       These variables define colors used across the UI. Update here to theme. */
     :root{
-      --bg1:#0c2146;    /* Background gradient start */
-      --bg2:#0f356e;    /* Background gradient end   */
-      --panel:#ffffff;  /* White panel surface       */
-      --accent:#2b8cff; /* Primary accent (e.g., Show Answer) */
-      --text:#0a0a0a;   /* Default dark text inside panels */
-      --muted:#5c646d;  /* Subtle/secondary text color */
-      --ok:#1b8a3a;     /* "I Know" button color */
-      --bad:#b02a37;    /* Danger / error color */
-      --next:#0d2c6d;   /* Prev/Next buttons color */
+      --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
+      --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
     }
 
-    /* =============================
-       PAGE BASE & TYPOGRAPHY
-       ============================= */
     html,body{height:100%}
     body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-
-      /* Decorative background: radial + linear gradient */
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background:
         radial-gradient(1200px 600px at 20% -10%, #1a3d7a 0%, transparent 60%),
         linear-gradient(135deg,var(--bg1),var(--bg2));
-
-      color:#fff; /* Default text outside panels is white */
-      display:flex; flex-direction:column; align-items:center;
+      color:#fff; display:flex; flex-direction:column; align-items:center;
 
       /* iPhone safety + UX */
       padding-top: env(safe-area-inset-top);
       padding-bottom: calc(env(safe-area-inset-bottom) + 0px);
       -webkit-text-size-adjust: 100%;
-      -webkit-tap-highlight-color: transparent; /* No grey tap flash on iOS */
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* =============================
-       TOP BAR (brand + mobile menu button)
-       ============================= */
     .topbar{
       width:100%; max-width:1100px;
       display:flex; align-items:center; justify-content:space-between;
@@ -66,64 +35,41 @@
     .logo{height:36px}
     .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
     .hamburger{
-      /* Hidden on desktop; shown by media query on small screens */
       display:none; align-items:center; justify-content:center;
       width:44px; height:44px; border-radius:8px; border:2px solid rgba(255,255,255,.25);
       background:rgba(255,255,255,.08); color:#fff; cursor:pointer;
     }
     .hamburger:focus{outline:2px solid #88b4ff; outline-offset:2px}
 
-    /* =============================
-       MAIN LAYOUT GRID
-       =============================
-       2 columns on desktop: left (categories) + right (flashcard).
-       Collapses to one column on mobile via media query. */
     .wrap{
       width:100%; max-width:1100px;
       display:grid; grid-template-columns: 280px 1fr; gap:14px;
       padding:0 16px 16px;
     }
 
-    /* =============================
-       PANEL (generic white card surface)
-       ============================= */
     .panel{
       background:var(--panel); color:var(--text);
       border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      max-height: calc(100svh - 140px); /* Keep within viewport height */
+      max-height: calc(100svh - 140px);
       overflow:auto; border: none;
     }
 
-    /* Left and right panel padding + right panel layout */
     .left{padding:12px; display:flex; flex-direction:column;}
     .right{padding:16px; min-height:320px; display:flex; flex-direction:column;}
 
-    /* =============================
-       TYPOGRAPHY UTILS
-       ============================= */
     .sectionTitle{font-weight:700; margin:6px 0 10px}
     .muted{color:var(--muted); font-size:13px}
 
-    /* =============================
-       CATEGORY LIST
-       =============================
-       Scrollable stack of category checkboxes. */
     .catlist{display:flex; flex-direction:column; gap:4px; max-height:40svh; overflow:auto; padding-right:6px}
     .checkboxline{display:flex; gap:6px; align-items:center}
     .checkboxline span{font-size:13px; line-height:1.15}
 
-    /* =============================
-       STATISTICS CHIPS
-       ============================= */
     .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
     .chip{
       background:#0c2146; color:#e8f1ff; border:1px solid #2a4f8a;
       padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700;
     }
 
-    /* =============================
-       BUTTONS (shared + variants)
-       ============================= */
     .btnrow{display:flex; gap:10px; flex-wrap:wrap}
     button{
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
@@ -131,52 +77,42 @@
       min-height:48px;
     }
     button:focus{outline:2px solid #88b4ff; outline-offset:2px}
-    button:hover{filter:brightness(0.98)} /* Minor hover feedback for all buttons */
+    button:hover{filter:brightness(0.98)}
 
-    /* Color variants for key actions */
-    button.primary{background:var(--accent); color:#fff;}  /* Show Answer */
-    button.ok{background:var(--ok); color:#fff;}           /* I Know */
-    button.bad{background:#ffcccc; color:#000;}            /* Don't Know (light red base) */
-    button.bad:hover{background:#b02a37; color:#fff;}      /* On hover, switch to dark red + white text */
-    button.next{background:var(--next); color:#fff;}       /* Prev/Next */
-    button.restart{background:#b02a37; color:#fff;}        /* Clear/Shuffle */
-    button.unhide{background:#1b8a3a; color:#fff;}         /* Unhide All */
+    button.primary{background:var(--accent); color:#fff;}
+    button.ok{background:var(--ok); color:#fff;}
+    button.bad{background:#ffcccc; color:#000;}
+    button.bad:hover{background:#b02a37; color:#fff;}
+    button.next{background:var(--next); color:#fff;}
+    button.restart{background:#b02a37; color:#fff;}
+    button.unhide{background:#1b8a3a; color:#fff;}
 
-    /* =============================
-       FLASHCARD CONTENT STYLES
-       ============================= */
-    .q{font-size: clamp(18px, 3.2vw, 22px); font-weight:700;} /* Responsive question text */
+    .q{font-size: clamp(18px, 3.2vw, 22px); font-weight:700;}
     .a{
       display:none; color:#1d2630; background:#f6f8fb;
       border:1px dashed #d9e1ee; border-radius:10px; padding:14px; white-space:pre-wrap
     }
 
-    /* Question/Answer image containers (hidden unless an image loads) */
     .imgbox{
       background:#f1f4fa; border: 1px solid #d4ddec;
       border-radius:10px; display:none; overflow:hidden; margin-top:8px;
     }
     .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
 
-    /* Answer wrapper that toggles when "Show Answer" is on */
     .answrap{display:none; flex-direction:column; gap:10px;}
 
-    /* Bottom controls row: Prev / Show / Know / Don't / Next */
     .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
     .grow{flex:1;}
     footer{margin:10px 0 20px; font-size:12px; color:#b7c2d6}
 
-    /* =============================
-       RESPONSIVE (<= 860px)
-       =============================
-       Left panel becomes a slide-in drawer with a scrim/backdrop. */
+    /* Mobile / iPhone landscape: left panel becomes a drawer */
     @media (max-width: 860px){
       .wrap{grid-template-columns: 1fr;}
-      .hamburger{display:inline-flex;} /* Show menu button on small screens */
+      .hamburger{display:inline-flex;}
       .panel.left{
         position: fixed; top:0; left:0; bottom:0;
         width:min(86vw, 360px);
-        transform: translateX(-100%);        /* Hidden by default */
+        transform: translateX(-100%);
         transition: transform .25s ease;
         z-index: 50;
         padding-top: calc(env(safe-area-inset-top) + 12px);
@@ -184,25 +120,20 @@
         max-height: none;
         border-top-right-radius: 16px; border-bottom-right-radius: 16px;
       }
-      .panel.left.open{ transform: translateX(0); } /* Visible state */
-      .catlist{ max-height: 70svh; }                /* Taller list on mobile */
+      .panel.left.open{ transform: translateX(0); }
+      .catlist{ max-height: 70svh; }
       .scrim{
-        /* Backdrop shown when drawer is open */
         display:none; position:fixed; inset:0;
         background: rgba(0,0,0,.40); z-index: 40;
       }
       .scrim.show{ display:block; }
-      body.no-scroll{ overflow:hidden; }            /* Prevent body scroll under drawer */
+      body.no-scroll{ overflow:hidden; }
     }
   </style>
 </head>
 <body>
-  <!-- =============================
-       TOP BAR: Brand + Hamburger (mobile)
-       ============================= -->
   <div class="topbar">
     <div class="leftGroup">
-      <!-- Drawer toggle button (ARIA tied to #catDrawer) -->
       <button id="menuBtn" class="hamburger" aria-label="Toggle categories" aria-controls="catDrawer" aria-expanded="false">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -211,96 +142,67 @@
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
-      <!-- Brand mark and name -->
       <img class="logo" src="/static/logo.jpg" alt="logo">
       <div class="brand">Triple Seven Aviation Flashcards</div>
     </div>
   </div>
 
-  <!-- Scrim (backdrop) toggled when the left drawer is open on mobile -->
   <div id="scrim" class="scrim" hidden></div>
 
-  <!-- =============================
-       MAIN GRID: Left (filters), Right (flashcard)
-       ============================= -->
   <div class="wrap">
-    <!-- LEFT: Categories + Session Controls + Stats -->
+    <!-- LEFT -->
     <div id="catDrawer" class="panel left" role="dialog" aria-label="Categories" aria-modal="true" tabindex="-1">
       <div class="sectionTitle">Categories</div>
-      <!-- Populated at runtime with checkbox items -->
       <div id="categories" class="catlist"></div>
 
       <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
       <div class="btnrow">
-        <!-- Reshuffle deck and clear hidden set -->
-        <button id="restart" class="restart">Clear/Shuffle</button>
-        <!-- Unhide all cards (clears hiddenIds) -->
+        <button id="restart" class="restart">Restart (Clear & Shuffle)</button>
         <button id="unhide" class="unhide">Unhide All</button>
       </div>
 
       <div class="sectionTitle" style="margin-top:10px;">Stats</div>
       <div class="statline">
-        <!-- Live-updated totals (see JS) -->
         <span class="chip" id="statTotal">Total: 0</span>
         <span class="chip" id="statFiltered">Filtered: 0</span>
         <span class="chip" id="statHidden">Hidden: 0</span>
       </div>
 
-      <!-- Status text for loading/errors -->
       <div class="muted" id="status">Loading…</div>
     </div>
 
-    <!-- RIGHT: Flashcard viewer -->
+    <!-- RIGHT -->
     <div class="panel right">
-      <!-- Current category name -->
       <div id="qcat" class="muted"></div>
-      <!-- Question text -->
       <div class="q" id="q">…</div>
 
-      <!-- Optional question image (hidden until load success) -->
       <div class="imgbox" id="qimgbox"><img id="qimg" alt=""></div>
 
-      <!-- Answer container (text + optional image) -->
       <div class="answrap" id="answrap">
         <div class="a" id="ans"></div>
         <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
       </div>
 
-      <!-- Bottom controls: navigation + knowledge self-marking -->
       <div class="controls-row" style="margin-top:10px;">
-        <button id="prev" class="next">Prev</button>
+        <button id="prev" class="next">Previous</button>
         <div class="btnrow grow">
           <button id="show" class="primary">Show Answer</button>
-          <button id="correct" class="ok">I Know</button>
-          <button id="wrong" class="bad">Don't Know</button>
+          <button id="correct" class="ok">I Knew It</button>
+          <button id="wrong" class="bad">I Didn’t Know</button>
         </div>
         <button id="next" class="next">Next</button>
       </div>
 
-      <!-- Progress readout e.g., "3 / 25" -->
       <footer><div id="progress" class="muted">0 / 0</div></footer>
     </div>
   </div>
 
   <script>
-    // =============================
-    // TOUCH ENABLEMENT
-    // =============================
-    // This empty touchstart listener enables certain passive scrolling and
-    // reduces delays on some mobile browsers (notably iOS).
     document.addEventListener('touchstart', function(){}, {passive:true});
 
-    // =============================
-    // DOM HELPERS
-    // =============================
-    // $  -> querySelector (first match)
-    // $$ -> querySelectorAll (array of matches)
     const $  = (s) => document.querySelector(s);
     const $$ = (s) => Array.from(document.querySelectorAll(s));
 
-    // =============================
-    // IMPORTANT ELEMENT REFERENCES
-    // =============================
     const statusEl = $('#status');
     const qEl = $('#q'), ansEl = $('#ans'), qcatEl = $('#qcat');
     const qimg = $('#qimg'), qimgbox = $('#qimgbox');
@@ -313,45 +215,30 @@
     const btnRestart = $('#restart'), btnUnhide = $('#unhide');
     const btnPrev = $('#prev'), btnNext = $('#next'), btnShow = $('#show'), btnOk = $('#correct'), btnBad = $('#wrong');
 
-    // =============================
-    // DRAWER ELEMENTS (mobile left panel)
-    // =============================
+    // Drawer
     const drawer = $('#catDrawer');
     const scrim  = $('#scrim');
     const menuBtn = $('#menuBtn');
 
-    // =============================
-    // APPLICATION STATE
-    // =============================
-    let fullDeck = [];     // All cards from backend
-    let deck = [];         // Filtered subset currently in play
-    let cats = [];         // List of unique category names
-    let idx = 0;           // Current index into 'deck'
-    let showing = false;   // Whether answer is currently visible
-    let hiddenIds = new Set(); // Set of card IDs hidden by user
+    // State
+    let fullDeck = [];
+    let deck = [];
+    let cats = [];
+    let idx = 0;
+    let showing = false;
+    let hiddenIds = new Set();
 
-    // =============================
-    // UTILITIES
-    // =============================
-    // uniq(arr): returns array with duplicates removed.
     const uniq = (arr) => [...new Set(arr)];
-
-    // normCard(c): normalize incoming card to the shape the UI expects.
-    // Ensures missing fields are filled with safe defaults.
     const normCard = (c) => ({
       id: c.id,
       category: c.category || 'General',
       question: c.question || '',
       answer: c.answer || '',
-      // EXACT fields from your JSON (images are optional)
+      // EXACT fields from your JSON:
       image: c.image || '',
       answer_image: c.answer_image || ''
     });
 
-    // =============================
-    // buildCategoryUI(): renders the checkbox list of categories.
-    // Attaches a one-time 'change' handler that re-filters the deck.
-    // =============================
     function buildCategoryUI(){
       categoriesEl.innerHTML = '';
       cats.forEach(cat => {
@@ -368,130 +255,80 @@
       }, {once:true});
     }
 
-    // =============================
-    // refilter(): rebuild 'deck' based on checked categories and hidden set.
-    // Updates the stat chips.
-    // =============================
     function refilter(){
       const chosen = $$('input[data-cat]:checked').map(i => i.value);
       deck = fullDeck.filter(c => chosen.includes(c.category) && !hiddenIds.has(c.id));
-      statTotal.textContent   = 'Total: '    + fullDeck.length;
-      statFiltered.textContent= 'Filtered: ' + deck.length;
-      statHidden.textContent  = 'Hidden: '   + hiddenIds.size;
+      statTotal.textContent = 'Total: ' + fullDeck.length;
+      statFiltered.textContent = 'Filtered: ' + deck.length;
+      statHidden.textContent = 'Hidden: ' + hiddenIds.size;
     }
 
-    // =============================
-    // render(): displays the current card (question + optional images).
-    // Handles empty-deck case and updates progress and answer visibility.
-    // =============================
     function render(){
       if (!deck.length){
-        qEl.textContent = 'No cards match your filters.';
-        answrap.style.display='none';
-        progress.textContent='0 / 0';
-        qimgbox.style.display='none';
-        aimgbox.style.display='none';
+        qEl.textContent = 'No cards match your filters.'; answrap.style.display='none'; progress.textContent='0 / 0';
+        qimgbox.style.display='none'; aimgbox.style.display='none';
         return;
       }
       const c = deck[idx];
-
-      // Bind text fields
       qcatEl.textContent = c.category;
       qEl.textContent = c.question || '';
       ansEl.textContent = c.answer || '';
 
-      // Question image (if provided)
+      // Use EXACT paths already present (e.g., "/cards/Folder/file.jpg")
       const qsrc = c.image || '';
+      const asrc = c.answer_image || '';
+
       if (qsrc){
         qimg.src = qsrc;
         qimg.onload  = () => { qimgbox.style.display = 'block'; };
         qimg.onerror = () => { qimgbox.style.display = 'none'; };
-      } else {
-        qimgbox.style.display = 'none';
-      }
+      } else { qimgbox.style.display = 'none'; }
 
-      // Answer image (if provided)
-      const asrc = c.answer_image || '';
       if (asrc){
         aimg.src = asrc;
         aimg.onload  = () => { aimgbox.style.display = 'block'; };
         aimg.onerror = () => { aimgbox.style.display = 'none'; };
-      } else {
-        aimgbox.style.display = 'none';
-      }
+      } else { aimgbox.style.display = 'none'; }
 
-      // Answer visibility + progress
       answrap.style.display = showing ? 'flex' : 'none';
       btnShow.textContent = showing ? 'Hide Answer' : 'Show Answer';
       progress.textContent = (idx+1) + ' / ' + deck.length;
     }
 
-    // clamp(n, lo, hi): bound a number within [lo, hi].
     const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
-    // =============================
-    // BUTTON HANDLERS
-    // =============================
-    // Toggle answer on/off
     btnShow.onclick = () => { showing = !showing; render(); };
-
-    // Navigate next/prev (also used by OK/Bad to advance)
     btnNext.onclick = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
     btnPrev.onclick = () => { idx = clamp(idx-1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
-
-    // Marking as known/unknown: current behavior is to advance one card.
     btnOk.onclick   = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
     btnBad.onclick  = () => { idx = clamp(idx+1, 0, Math.max(0, deck.length-1)); showing=false; render(); };
 
-    // =============================
-    // Session controls
-    // =============================
-    // Shuffle the full deck in-place (Fisher–Yates) and re-apply filters.
     btnRestart.onclick = () => {
-      for (let i = fullDeck.length-1; i > 0; i--) {
-        const j = Math.floor(Math.random()*(i+1));
-        [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]];
-      }
+      for (let i = fullDeck.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]]; }
       refilter(); idx = 0; showing = false; render();
     };
-
-    // Clear hidden set and rebuild filtered deck.
     btnUnhide.onclick = () => { hiddenIds.clear(); refilter(); idx = 0; showing = false; render(); };
 
-    // =============================
-    // DRAWER (mobile) OPEN/CLOSE
-    // =============================
-    // Open the left drawer and show scrim/backdrop
+    // Drawer behavior
     function openDrawer(){
-      drawer.classList.add('open');
-      scrim.classList.add('show');
-      scrim.hidden = false;
+      drawer.classList.add('open'); scrim.classList.add('show'); scrim.hidden = false;
       document.body.classList.add('no-scroll');
       menuBtn.setAttribute('aria-expanded','true');
       drawer.focus();
     }
-
-    // Close the drawer and hide the backdrop
     function closeDrawer(){
-      drawer.classList.remove('open');
-      scrim.classList.remove('show');
-      scrim.hidden = true;
+      drawer.classList.remove('open'); scrim.classList.remove('show'); scrim.hidden = true;
       document.body.classList.remove('no-scroll');
       menuBtn.setAttribute('aria-expanded','false');
       menuBtn.focus();
     }
-
-    // Toggle via button; click scrim to close; ESC to close.
     menuBtn.addEventListener('click', () => {
       if (drawer.classList.contains('open')) closeDrawer(); else openDrawer();
     });
     scrim.addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer(); });
 
-    // =============================
-    // SWIPE NAVIGATION (mobile)
-    // =============================
-    // Horizontal swipe left/right to go next/prev.
+    // Swipes for card nav
     let startX=null;
     document.addEventListener('touchstart', e => { startX = e.changedTouches[0].clientX; }, {passive:true});
     document.addEventListener('touchend', e => {
@@ -499,30 +336,18 @@
       if (Math.abs(dx) > 40) { if (dx < 0) btnNext.click(); else btnPrev.click(); }
     }, {passive:true});
 
-    // =============================
-    // INITIALIZATION: fetch cards and render first view
-    // =============================
+    // Load data
     (async function init(){
       try{
-        // Request cards from API; disable cache to always get the latest
         const res = await fetch('/api/cards', {cache:'no-store'});
         const data = await res.json();
-
-        // Normalize response shape: supports either array or {cards:[...]}
         fullDeck = (Array.isArray(data) ? data : (data.cards || [])).map(normCard);
         if (!fullDeck.length) throw new Error('No cards in cards.json');
-
-        // Build category filters and first render
         cats = uniq(fullDeck.map(c => c.category));
         buildCategoryUI();
-        refilter();
-        idx = 0;
-        showing = false;
-        render();
-
+        refilter(); idx = 0; showing = false; render();
         statusEl.textContent = `Loaded ${fullDeck.length} cards.`;
       }catch(e){
-        // Graceful error: show status + placeholder in question area
         statusEl.textContent = 'Failed to load cards: ' + e.message;
         qEl.textContent = 'Loading failed.';
       }
