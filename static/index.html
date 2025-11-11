@@ -79,15 +79,7 @@
     button:focus{outline:2px solid #88b4ff; outline-offset:2px}
     button:hover{filter:brightness(0.98)}
 
-    
-    /* Uniform smaller buttons for bottom controls */
-    .btn-sm{
-      min-height:40px;
-      padding:6px 10px;
-      width:140px;
-    }
-
-button.primary{background:var(--accent); color:#fff;}
+    button.primary{background:var(--accent); color:#fff;}
     button.ok{background:var(--ok); color:#fff;}
     button.bad{background:#ffcccc; color:#000;}
     button.bad:hover{background:#b02a37; color:#fff;}
@@ -165,7 +157,7 @@ button.primary{background:var(--accent); color:#fff;}
 
       <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
       <div class="btnrow">
-        <button id="restart" class="restart">Restart (Clear & Shuffle)</button>
+        <button id="restart" class="restart">Clear/Shuffle)</button>
         <button id="unhide" class="unhide">Unhide All</button>
       </div>
 
@@ -192,13 +184,13 @@ button.primary{background:var(--accent); color:#fff;}
       </div>
 
       <div class="controls-row" style="margin-top:10px;">
-        <button id="prev" class="next btn-sm">Previous</button>
+        <button id="prev" class="next">Prev</button>
         <div class="btnrow grow">
-          <button id="show" class="primary btn-sm">Show Answer</button>
-          <button id="correct" class="ok btn-sm">I Knew It</button>
-          <button id="wrong" class="bad btn-sm">I Didn’t Know</button>
+          <button id="show" class="primary">Show Answer</button>
+          <button id="correct" class="ok">Know It</button>
+          <button id="wrong" class="bad">Don't Know</button>
         </div>
-        <button id="next" class="next btn-sm">Next</button>
+        <button id="next" class="next">Next</button>
       </div>
 
       <footer><div id="progress" class="muted">0 / 0</div></footer>
