@@ -1,143 +1,182 @@
-# app.py — Flask app for Render (works with `gunicorn app:app`)
-import os
-import json
+# app.py — Serve your exact HTML + /logo.jpg + /cards/** (Flask 3.1+)
+import os, json, sqlite3, uuid, hashlib
+from datetime import datetime
 from pathlib import Path
-from flask import Flask, send_from_directory, jsonify, make_response, abort
+from typing import List, Dict, Any, Optional
+from flask import Flask, request, jsonify, send_from_directory, g, redirect, abort, make_response
 
-# --- Paths & env
-ROOT        = Path(__file__).resolve().parent
-STATIC_DIR  = ROOT / "static"
-CARDS_DIR   = STATIC_DIR / "cards"
-DATA_DIR    = ROOT / "data"
-DATA_DIR.mkdir(exist_ok=True)
-CARDS_JSON  = DATA_DIR / "cards.json"
-DB_PATH     = os.environ.get("DB_PATH", str(ROOT / "app.db"))  # kept for future use
+ROOT       = Path(__file__).resolve().parent
+STATIC_DIR = ROOT / "static"
+CARDS_DIR  = STATIC_DIR / "cards"
+DATA_DIR   = ROOT / "data"
+CARDS_JSON = DATA_DIR / "cards.json"
+DB_PATH    = os.environ.get("DB_PATH", str(ROOT / "app.db"))
+BUILD_ID   = os.environ.get("BUILD_ID", str(uuid.uuid4())[:8])
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="/static")
 
-# --- Minimal default deck if data/cards.json is missing
-DEFAULT_DECK = [
-    {"id": 1, "front": "What does ‘IM SAFE’ stand for?", "back": "Illness, Medication, Stress, Alcohol, Fatigue, Emotion/Eating"},
-    {"id": 2, "front": "VFR weather minima (Class E, <10,000’ MSL)?", "back": "3 SM, 500 below, 1,000 above, 2,000 horizontal"},
-]
+# --- Bootstrap
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+CARDS_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-def load_cards():
-    if CARDS_JSON.exists():
-        try:
-            with CARDS_JSON.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-            if isinstance(data, list) and data:
-                return data
-        except Exception:
-            pass
-    return DEFAULT_DECK
+def _nocache(resp):
+    resp.cache_control.no_store = True
+    resp.cache_control.max_age = 0
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
-# --- HTML UI
-INDEX_HTML = """<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Flashcards</title>
-<link rel="icon" href="/logo.jpg">
-<style>
-:root { --bg:#0b1b34; --panel:#12284d; --ink:#e7eefc; --muted:#a9b8d9; --accent:#6aa9ff; }
-* { box-sizing:border-box; }
-html, body { height:100%; }
-body {
-  margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  color: var(--ink);
-  background: radial-gradient(1200px 600px at 20% -10%, #1a3d7a 0%, transparent 60%),
-              radial-gradient(900px 500px at 110% 20%, #0e213f 0%, transparent 55%),
-              linear-gradient(180deg, #081427 0%, #0b1b34 60%, #0a1830 100%);
-}
-.header {
-  display:flex; align-items:center; gap:.75rem; padding:1rem 1.25rem; border-bottom:1px solid rgba(255,255,255,.06);
-  backdrop-filter: blur(4px);
-}
-.header img { width:32px; height:32px; border-radius:6px; }
-.header .title { font-weight:700; letter-spacing:.2px; }
-.wrapper { max-width:960px; margin:2rem auto; padding:0 1rem; }
-.panel {
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,.25);
-}
-.controls { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem; }
-button {
-  border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06);
-  color:var(--ink); padding:.6rem .9rem; border-radius:12px; cursor:pointer;
-}
-button:hover { background:rgba(255,255,255,.12); }
-.card {
-  display:flex; align-items:center; justify-content:center; text-align:center; min-height:220px;
-  border:1px dashed rgba(255,255,255,.2); border-radius:14px; padding:1.25rem; font-size:1.25rem;
-}
-.meta { margin-top:.75rem; color:var(--muted); font-size:.9rem; }
-.badge { display:inline-block; padding:.2rem .5rem; border:1px solid rgba(255,255,255,.2); border-radius:999px; font-size:.8rem; }
-.footer { text-align:center; color:var(--muted); font-size:.85rem; padding:2rem 0; }
-</style>
-</head>
-<body>
-  <div class="header">
-    <img src="/logo.jpg" alt="logo" />
-    <div class="title">Flashcards</div>
-    <div class="badge" style="margin-left:auto;">Render</div>
-  </div>
-  <div class="wrapper">
-    <div class="panel">
-      <div class="controls">
-        <button id="prev">Prev</button>
-        <button id="flip">Flip</button>
-        <button id="next">Next</button>
-      </div>
-      <div id="card" class="card">Loading…</div>
-      <div class="meta"><span id="pos">0/0</span></div>
-    </div>
-    <div class="footer">Serving <code>/logo.jpg</code> and files under <code>/static/cards/…</code>. Data from <code>/api/cards</code>.</div>
-  </div>
-<script>
-let cards=[], i=0, back=false;
-async function load(){ try{
-  const r = await fetch('/api/cards'); cards = await r.json();
-  if(!Array.isArray(cards) || cards.length===0) cards=[{front:'No cards', back:'Add data/cards.json'}];
-  i=0; back=false; render();
-}catch(e){ document.getElementById('card').textContent='Failed to load cards.'; } }
-function render(){
-  const c = cards[i]||{front:'—',back:'—'};
-  document.getElementById('card').textContent = back ? (c.back||'') : (c.front||'');
-  document.getElementById('pos').textContent = `${i+1}/${cards.length}`;
-}
-document.getElementById('prev').onclick = ()=>{ i=(i-1+cards.length)%cards.length; back=false; render(); };
-document.getElementById('next').onclick = ()=>{ i=(i+1)%cards.length; back=false; render(); };
-document.getElementById('flip').onclick = ()=>{ back=!back; render(); };
-load();
-</script>
-</body>
-</html>
-"""
+@app.before_request
+def _log_req():
+    print(f"[{BUILD_ID}] {request.method} {request.path} "
+          f"Accept={request.headers.get('Accept','')} "
+          f"Sec-Fetch-Mode={request.headers.get('Sec-Fetch-Mode','')}")
 
-# --- Routes
-@app.get("/")
-def index():
-    return make_response(INDEX_HTML, 200, {"Content-Type": "text/html; charset=utf-8"})
+# --- Minimal DB/state support (unused by your HTML, but harmless & available)
+def get_db():
+    if "db" not in g:
+        g.db = sqlite3.connect(DB_PATH)
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
-@app.get("/logo.jpg")
-def logo():
-    if not (STATIC_DIR / "logo.jpg").exists():
-        abort(404)
-    return send_from_directory(STATIC_DIR, "logo.jpg")
+@app.teardown_appcontext
+def close_db(exc):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
 
-@app.get("/cards/<path:filename>")
-def cards_static(filename: str):
-    path = CARDS_DIR / filename
+def init_db():
+    db = get_db()
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS user_state (
+            user_id TEXT PRIMARY KEY,
+            state_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS hidden_cards (
+            user_id TEXT NOT NULL,
+            card_id INTEGER NOT NULL,
+            PRIMARY KEY (user_id, card_id)
+        )
+    """)
+    db.commit()
+
+with app.app_context():
+    init_db()
+
+# --- Cards loader
+_cards_cache: Optional[List[Dict[str, Any]]] = None
+def load_cards() -> List[Dict[str, Any]]:
+    global _cards_cache
+    if _cards_cache is not None:
+        return _cards_cache
+    if not CARDS_JSON.exists():
+        _cards_cache = [{
+            "id": 999, "category": "Demo", "question": "Demo Q",
+            "image": "/cards/demo_front.jpg", "answer": "Demo A",
+            "answer_image": "/cards/demo_back.jpg", "url": ""
+        }]
+        return _cards_cache
+    with CARDS_JSON.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        raise ValueError("cards.json must be a list")
+    for c in data:
+        c.setdefault("id", None)
+        c.setdefault("category", "")
+        c.setdefault("question", "")
+        c.setdefault("image", "")
+        c.setdefault("answer", "")
+        c.setdefault("answer_image", "")
+        c.setdefault("url", "")
+    _cards_cache = data
+    return _cards_cache
+
+# --- Routes to serve your assets exactly as referenced by your HTML
+@app.route("/logo.jpg")
+def serve_logo():
+    # Your HTML uses /logo.jpg at the root; serve static/logo.jpg here.
+    path = STATIC_DIR / "logo.jpg"
     if not path.exists():
         abort(404)
-    return send_from_directory(CARDS_DIR, filename)
+    return send_from_directory(str(STATIC_DIR), "logo.jpg")
 
-@app.get("/api/cards")
-def api_cards():
-    return jsonify(load_cards())
+@app.route("/cards/<path:filename>")
+def serve_card_file(filename):
+    file_path = CARDS_DIR / filename
+    if not file_path.exists() or not file_path.is_file():
+        abort(404)
+    return send_from_directory(str(CARDS_DIR), filename)
 
-# --- Entrypoint for local dev (Render uses gunicorn)
+# --- UI (shell HTML) with no-cache so updates show immediately
+@app.route("/")
+def index():
+    resp = make_response(send_from_directory(app.static_folder, "index.html"))
+    return _nocache(resp)
+
+@app.route("/index.html")
+def index_html():
+    return redirect("/")
+
+# SPA fallback for any non-API path
+@app.route("/<path:maybe_client_route>")
+def spa_fallback(maybe_client_route):
+    if not maybe_client_route.startswith("api/"):
+        resp = make_response(send_from_directory(app.static_folder, "index.html"))
+        return _nocache(resp)
+    return jsonify({"error": "Not found"}), 404
+
+# --- API (your HTML uses only /api/cards)
+@app.route("/api/cards", methods=["GET"])
+def api_get_cards():
+    # If someone navigates here in the address bar, bounce back to UI.
+    if request.headers.get("Sec-Fetch-Mode", "") == "navigate":
+        return redirect("/", code=302)
+
+    cards = load_cards()
+    categories_param = request.args.get("categories", "").strip()
+    if categories_param:
+        wanted = {c for c in categories_param.split(",") if c}
+        cards = [c for c in cards if str(c.get("category","")).strip() in wanted]
+    return jsonify(cards)
+
+# Optional endpoints left in place (unused by your HTML)
+@app.route("/api/state", methods=["GET"])
+def api_get_state():
+    return jsonify({"current_index":0,"correct":0,"incorrect":0,"seen":0,"deck_order":[],"category_filters":[]})
+
+@app.route("/api/state", methods=["POST"])
+def api_set_state():
+    return jsonify({"ok": True})
+
+@app.route("/api/restart", methods=["POST"])
+def api_restart():
+    return jsonify({"ok": True})
+
+@app.route("/api/hide", methods=["POST"])
+def api_hide():
+    return jsonify({"ok": True})
+
+@app.route("/api/unhide_all", methods=["POST"])
+def api_unhide_all():
+    return jsonify({"ok": True})
+
+@app.route("/api/categories", methods=["GET"])
+def api_categories():
+    cards = load_cards()
+    cats = sorted({str(c.get("category", "")).strip() for c in cards if str(c.get("category", "")).strip()})
+    return jsonify(cats)
+
+# --- Entrypoint
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=int(os.environ.get("FLASK_PORT", "5000")), debug=True)
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
+    port = int(os.environ.get("FLASK_PORT", "5000"))
+    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+    print(f"[{BUILD_ID}] UI:    http://{host}:{port}/")
+    print(f"[{BUILD_ID}] API:   http://{host}:{port}/api")
+    print(f"[{BUILD_ID}] Files: http://{host}:{port}/cards/<file>  -> {CARDS_DIR}")
+    print(f"[{BUILD_ID}] Logo:  http://{host}:{port}/logo.jpg      -> {STATIC_DIR/'logo.jpg'}")
+    app.run(host=host, port=port, debug=debug)
