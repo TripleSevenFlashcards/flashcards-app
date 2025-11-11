@@ -1,10 +1,13 @@
 <!doctype html>
 <html>
 <head>
+  <!-- Head: metadata, viewport, inline styles -->
   <meta charset="utf-8" />
   <title>Flashcards</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    /* Styles: theme tokens, layout, buttons, components */
+    /* Theme constants (CSS variables) */
     :root{
       --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
       --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
@@ -16,18 +19,19 @@
       color:#fff; display:flex; flex-direction:column; align-items:center;
     }
 
-    /* Tight top bar */
+    /* Tight top bar (logo + brand) */
     .topbar{width:100%; max-width:1100px; display:flex; align-items:center; gap:10px; padding:12px 16px;}
     .logo{height:36px}
     .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
 
-    /* Grid */
+    /* Grid: left column (280px) + right flexible column */
     .wrap{
       width:100%; max-width:1100px;
       display:grid; grid-template-columns: 280px 1fr; gap:14px;
       padding:0 16px 16px;
     }
 
+    /* Panel container (shared card UI) */
     .panel{
       background:var(--panel); color:var(--text);
       border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
@@ -37,17 +41,25 @@
       border: none;
     }
 
+    /* Left panel: categories, session controls, stats */
     .left{padding:12px; display:flex; flex-direction:column;}
+    /* Right panel: flashcard viewport */
     .right{padding:16px; min-height:320px; display:flex; flex-direction:column;}
 
+    /* Muted caption text utility */
     .muted{color:var(--muted); font-size:13px}
+    /* Section heading label */
     .sectionTitle{font-weight:700; margin:6px 0 10px}
 
+    /* Category checklist container */
     .catlist{display:flex; flex-direction:column; gap:4px; max-height:40vh; overflow:auto; padding-right:6px}
+    /* Single category row (checkbox + label) */
     .checkboxline{display:flex; gap:6px; align-items:center}
     .checkboxline span{font-size:13px; line-height:1.15}
 
+    /* Stats chip row */
     .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
+    /* Stat chip styling (pill) */
     .chip{
       background:#eef3ff; color:#0b2c5a;
       border:1px solid #cfe0ff;               /* light outline */
@@ -55,11 +67,13 @@
     }
 
     /* Buttons: slightly smaller & narrower, ALL with black outline */
+    /* Group of action buttons */
     .btnrow{display:flex; gap:10px; flex-wrap:wrap}
     button{
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
       cursor:pointer; text-transform:capitalize; border:2px solid #000; /* black outline */
     }
+    /* Button color variants */
     button.primary{background:var(--accent); color:#fff;}
     button.primary:hover{filter:brightness(0.95);}
     button.ok{background:var(--ok); color:#fff;}
@@ -75,14 +89,17 @@
     /* Hide Card: requested #435663 with black outline */
     button.hidecard{background:#435663; color:#fff;}
 
+    /* Card container (question, answer, controls, footer) */
     #card{
       flex:1;
       border:1px solid #e3e8ef;              /* restore light border */
       border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
     }
+    /* Question text */
     .q{font-size:20px; font-weight:700}
 
     /* Image boxes with light outline */
+    /* Optional image containers; hidden until image loads */
     .imgbox{
       width:6in; height:auto; max-width:100%;
       background:#f6f8fb; border:1px solid #d9e1ee; /* light border */
@@ -90,6 +107,7 @@
     }
     .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
 
+    /* Answer text box */
     .a{
       display:none; color:#1d2630; background:#f6f8fb;
       border:1px dashed #d9e1ee;             /* light dashed border */
@@ -97,8 +115,11 @@
     }
 
     .small{font-size:12px}
+    /* Footer row: category + position */
     .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
+    /* Link row for optional external resource */
     .linkrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    /* External link chip */
     .extlink{
       display:inline-flex; align-items:center; gap:6px;
       background:#e8f1ff; color:#0b2c5a;
@@ -107,33 +128,48 @@
       text-decoration:none; font-weight:600;
     }
     .extlink:hover{background:#dceaff}
+    /* Answer wrapper (text + image), hidden by default */
     .answrap{display:none; flex-direction:column; gap:10px;}
+    /* 'Hide Answer' button visual state */
     .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
     .hidebtn:hover{filter:brightness(0.95);}
 
-    /* Bottom controls layout */
+    /* Bottom controls layout (prev / actions / next) */
+    /* Controls row container */
     .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
+    /* Flexible spacer */
     .grow{flex:1;}
   </style>
 </head>
 <body>
+  <!-- Body: top bar, left panel (filters), right panel (study) -->
+  <!-- Top bar: brand header -->
   <div class="topbar">
     <img class="logo" src="/static/logo.jpg" alt="logo">
     <div class="brand">Triple Seven Aviation Flashcards</div>
   </div>
 
+  <!-- Main grid wrapper (left + right panels) -->
   <div class="wrap">
+        <!-- LEFT: filters and session controls -->
     <div class="panel left">
+      <!-- Categories header -->
       <div class="sectionTitle">Categories</div>
+      <!-- Checkbox list gets injected by buildCategoryUI() -->
       <div id="categories" class="catlist"></div>
 
+      <!-- Session control buttons -->
       <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
-      <div class="btnrow">
+      <!-- Restart + Unhide buttons -->
+                <!-- Core actions -->
+          <div class="btnrow">
         <button id="restart" class="restart" title="Clear progress and reshuffle the deck.">Restart (Clear & Shuffle)</button>
         <button id="unhide" class="unhide" title="Unhide all previously hidden cards.">Show Hidden Again</button>
       </div>
 
+      <!-- Stats header -->
       <div class="sectionTitle" style="margin-top:10px;">Stats</div>
+      <!-- Stat chips reflect only currently filtered categories -->
       <div id="stats" class="statline">
         <span class="chip">Answered: <b id="s-seen">0</b></span>
         <span class="chip">Correct: <b id="s-ok">0</b></span>
@@ -143,39 +179,60 @@
       <div class="muted small">Stats only count cards in the categories currently checked.</div>
     </div>
 
+        <!-- RIGHT: study area (status, card, controls) -->
     <div class="panel right">
+      <!-- Status message (loading/errors) -->
       <div id="status" class="muted">Loading deck…</div>
+      <!-- Card container -->
       <div id="card">
+        <!-- Question wrapper -->
         <div id="qwrap">
+                    <!-- Question text -->
           <div class="q" id="qtext"></div>
+                    <!-- Optional question image (shown after load) -->
           <div id="qimgbox" class="imgbox"><img id="qimg" alt=""></div>
+                    <!-- Optional external resource link -->
           <div class="linkrow" id="linkrow" style="display:none">
             <a id="qurl" class="extlink" target="_blank" rel="noopener">Open Additional Resources</a>
           </div>
         </div>
 
+                <!-- Answer wrapper (text + image) -->
         <div class="answrap" id="answrap">
+                    <!-- Answer text -->
           <div class="a" id="ans"></div>
+                    <!-- Optional answer image (shown after load) -->
           <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
         </div>
 
+                <!-- Controls row: prev / actions / next -->
         <div class="controls-row">
+                    <!-- Previous card (no grading) -->
           <button id="prev" class="next" title="Go to the previous card.">Previous</button>
 
           <div class="btnrow">
+                        <!-- Toggle answer visibility -->
             <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
+                        <!-- Grade: correct -->
             <button id="correct" class="ok" title="Mark this card correct and move on.">I Knew It</button>
+                        <!-- Grade: incorrect -->
             <button id="wrong" class="bad" title="Mark this card wrong and move on.">I Missed It</button>
+                        <!-- Hide this card from rotation -->
             <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide Card</button>
           </div>
 
+                    <!-- Flexible spacer to push Next button -->
           <div class="grow"></div>
 
+                    <!-- Next card (no grading) -->
           <button id="next" class="next" title="Skip to the next card without marking.">Next</button>
         </div>
 
+                <!-- Footer: category + position -->
         <div class="footerline small">
+                    <!-- Current card category label -->
           <div id="footcat" class="muted"></div>
+                    <!-- Position: "Card N of M" -->
           <div id="pos" class="muted"></div>
         </div>
       </div>
@@ -183,6 +240,7 @@
   </div>
 
   <script>
+    // Script: DOM refs, state, helpers, rendering, and boot
     const statusEl = document.getElementById('status');
     const qText = document.getElementById('qtext');
     const qImg  = document.getElementById('qimg');
@@ -228,6 +286,7 @@
     function saveHidden(){localStorage.setItem('hiddenIds',JSON.stringify([...hiddenIds]));}
     function saveProgress(){localStorage.setItem('progress',JSON.stringify(progress));}
 
+    // Build category checkbox list and wire change handler
     function buildCategoryUI(){
       catsEl.innerHTML='';
       categories.forEach(cat=>{
@@ -245,11 +304,13 @@
       };
     }
 
+    // Rebuild filtered deck using selectedCats and hiddenIds, then update stats
     function refilter(){
       filtered=fullDeck.filter(c=>(!c.category||selectedCats.has(c.category))&&!hiddenIds.has(String(c.id)));
       if(idx>=filtered.length) idx=0; updateStats();
     }
 
+    // Recompute stats for current filtered deck and update UI
     function updateStats(){
       let seen=0,ok=0;
       filtered.forEach(c=>{const id=String(c.id);if(progress.seen[id])seen++;if(progress.ok[id])ok++;});
@@ -258,8 +319,10 @@
       sAcc.textContent=seen?Math.round((ok/seen)*100)+'%':'0%';
     }
 
+    // Validate that a URL is http(s)
     function isHttpUrl(u){return /^https?:\/\//i.test(u);}
 
+    // Reset the answer area and 'Show Answer' button state
     function resetAnswerHiddenUI(){
       ansEl.style.display='none';
       aImgBox.style.display='none';
@@ -270,6 +333,7 @@
       showBtn.classList.remove('hidebtn');
     }
 
+    // Render current card: question, optional images, link, footer, nav buttons
     function render(){
       if(!filtered.length){
         qText.textContent="No cards match filters.";
@@ -311,6 +375,7 @@
     }
 
     // Show/Hide Answer toggle
+    // Switch the answer area between hidden and visible states
     showBtn.onclick=()=>{
       if(!filtered.length) return;
       const currentlyVisible = ansWrap.style.display !== 'none' && (ansEl.style.display === 'block' || aImgBox.style.display !== 'none');
@@ -342,13 +407,13 @@
       }
     };
 
-    // Navigation & grading
+    // Navigation & grading handlers
     nextBtn.onclick=()=>{if(filtered.length){idx=Math.min(idx+1, filtered.length-1);render();}};
     prevBtn.onclick=()=>{if(filtered.length){idx=Math.max(idx-1, 0);render();}};
     document.getElementById('correct').onclick=()=>{if(filtered.length){const id=String(filtered[idx].id);progress.ok[id]=true;progress.seen[id]=true;saveProgress();updateStats();nextBtn.click();}};
     document.getElementById('wrong').onclick=()=>{if(filtered.length){const id=String(filtered[idx].id);delete progress.ok[id];progress.seen[id]=true;saveProgress();updateStats();nextBtn.click();}};
 
-    // Hide Card button
+    // Hide Card button: add current card ID to hiddenIds and rebuild deck
     hideBtn.onclick=()=>{
       if(!filtered.length) return;
       const id=String(filtered[idx].id);
@@ -364,7 +429,7 @@
       }
     };
 
-    // Session controls
+    // Session controls: restart session or unhide all cards
     document.getElementById('restart').onclick=()=>{
       progress={ok:{},seen:{}}; saveProgress();
       hiddenIds=new Set(); saveHidden();
@@ -376,7 +441,7 @@
       statusEl.textContent='All hidden cards are now visible.';
     };
 
-    // Boot
+    // Boot: fetch deck, normalize, build UI, filter, render, and paint status
     (async function boot(){
       statusEl.textContent='Loading deck…';
       try{
