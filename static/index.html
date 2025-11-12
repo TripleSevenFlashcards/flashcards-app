@@ -25,14 +25,14 @@
     .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
 
     /* Grid: left column (280px) + right flexible column */
-    .wrap{                 /* Targets any element with class="wrap" */
-        width:100%;        /* Make it as wide as its container allows */
-        max-width:1100px;  /* But never exceed 1100px on large screens */
-        display:grid;      /* Turn it into a CSS Grid container */
-        grid-template-columns: 270px 1fr; /* Two columns: 280px fixed + remaining space */
-        gap:14px;          /* 14px spacing between grid items (rows and columns) */
-        padding:0 16px 16px;/* Inner space: top 0, right 16px, bottom 16px, left 16px */
-    }                       /* End of rule */
+    .wrap{                                                /* Targets any element with class="wrap" */
+        width:100%;                                       /* Make it as wide as its container allows */
+        max-width:1100px;                                 /* But never exceed 1100px on large screens */
+        display:grid;                                     /* Turn it into a CSS Grid container */
+        grid-template-columns: minmax(240px, 270px) 1fr;  /* Left Panel with flexible bounds */
+        gap:14px;                                         /* 10px spacing between grid items (rows and columns) */
+        padding:0 16px 16px;                              /* Inner space: top 0, right 16px, bottom 16px, left 16px */
+    }                                                     /* End of rule */
 
     /* Panel container (shared card UI) */
     .panel{
