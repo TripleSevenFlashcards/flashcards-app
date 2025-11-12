@@ -127,19 +127,24 @@
     .small{font-size:12px}
     /* Footer row: category + position */
     .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
+
     /* Link row for optional external resource */
     .linkrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    /* External link chip */
+    
+    /* External Resources chip */
     .extlink{
-      display:inline-flex; align-items:center; gap:6px;
-      background:#e8f1ff; color:#0b2c5a;
-      border:1px solid #cfe0ff;               /* light outline */
-      border-radius:8px; padding:6px 10px;
-      text-decoration:none; font-weight:600;
+        font-size:12px;          /* add explicit size */
+        padding:4px 8px;         /* tighter chip */
+        border-radius:6px;       /* slightly smaller corners */
+        font-weight:500;         /* keep or change as needed */
     }
+
+
     .extlink:hover{background:#dceaff}
+
     /* Answer wrapper (text + image), hidden by default */
     .answrap{display:none; flex-direction:column; gap:10px;}
+
     /* 'Hide Answer' button visual state */
     .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
     .hidebtn:hover{filter:brightness(.50);}   /*  Was .9   */
