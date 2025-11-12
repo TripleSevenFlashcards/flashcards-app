@@ -25,14 +25,13 @@
     .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
 
     /* Grid: left column (280px) + right flexible column */
-    /* Make BOTH panels ~10px narrower each */
-    .wrap{
-        /* was: max-width:1100px; grid-template-columns: 280px 1fr; */
-        max-width:1080px;                 /* total -20px → right panel ~10px narrower */
-        grid-template-columns: 270px 1fr; /* left panel -10px */
-        gap:14px;                         /* unchanged */
-        width:100%;
-        padding:0 16px 16px;
+   .wrap{
+      width:100%;
+      max-width:1100px;
+      display:grid;
+      grid-template-columns: 280px 1fr;
+      gap:14px;
+      padding:0 16px 16px;
     }
 
     /* Panel container (shared card UI) */
