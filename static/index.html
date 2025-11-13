@@ -29,7 +29,7 @@
       width:100%;
       max-width:900px;
       display:grid;
-      grid-template-columns: 280px 1fr; /* ← left = 280px, right = rest */
+      grid-template-columns: 280px 1fr; /* left = 280px, right = rest */
       gap:14px;
       padding:0 16px 16px;
     }
@@ -40,8 +40,7 @@
       border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
       max-height: calc(100vh - 140px);
       overflow:auto;
-      /* no black outline on panels */
-      border: none;
+      border:none;
     }
 
     /* Left panel: categories, session controls, stats */
@@ -65,20 +64,19 @@
     /* Stat chip styling (pill) */
     .chip{
       background:#eef3ff; color:#0b2c5a;
-      border:1px solid #cfe0ff;               /* light outline */
+      border:1px solid #cfe0ff;
       border-radius:999px; padding:6px 10px; font-size:12px
     }
 
     /* Buttons: slightly smaller & narrower, ALL with black outline */
-    /* Group of action buttons */
     .btnrow{display:flex; gap:10px; flex-wrap:wrap}
     button{
       padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
-      cursor:pointer; text-transform:capitalize; border:2px solid #000; /* black outline */
+      cursor:pointer; text-transform:capitalize; border:2px solid #000;
     }
-    /* Button color variants */  /* These were 0.95 but I changed to .50 */
+    /* Button color variants */
     button.primary{background:var(--accent); color:#fff;}
-    button.primary:hover{filter:brightness(0.50);}          
+    button.primary:hover{filter:brightness(0.50);}
     button.ok{background:var(--ok); color:#fff;}
     button.ok:hover{filter:brightness(0.50);}
     button.bad{background:#ffcccc; color:#000;}
@@ -90,24 +88,23 @@
     button.unhide{background:#1b8a3a; color:#fff;}
     button.unhide:hover{filter:brightness(.50);}
 
-    /* Hide Card: requested #435663 with black outline */
+    /* Hide Card */
     button.hidecard{background:#435663; color:#fff;}
     button.hidecard:hover{filter:brightness(.50);}
 
     /* Card container (question, answer, controls, footer) */
     #card{
       flex:1;
-      border:1px solid #e3e8ef;              /* restore light border */
+      border:1px solid #e3e8ef;
       border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
     }
     /* Question text */
     .q{font-size:20px; font-weight:700}
 
     /* Image boxes with light outline */
-    /* Optional image containers; hidden until image loads */
     .imgbox{
       width:6in; height:auto; max-width:100%;
-      background:#f6f8fb; border:1px solid #d9e1ee; /* light border */
+      background:#f6f8fb; border:1px solid #d9e1ee;
       border-radius:10px; display:none; overflow:hidden; margin-top:8px;
     }
     .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
@@ -117,11 +114,11 @@
       display:none;
       color:#1d2630;
       background:#f6f8fb;
-      border:1px dashed #d9e1ee;             /* light dashed border */
+      border:1px dashed #d9e1ee;
       border-radius:10px;
       padding:14px;
       white-space:pre-wrap;
-      }
+    }
 
     .small{font-size:12px}
     /* Footer row: category + position */
@@ -132,34 +129,31 @@
 
     /* Additional Resources Link/Button */
     .extlink{
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        padding:3px 5px;
-        border-radius:8px;
-        font-weight:600;
-        font-size:14px;
-        border:2px solid #000;
-        background:#e8f1ff;
-        color:#0b2c5a;
-        text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:3px 5px;
+      border-radius:8px;
+      font-weight:600;
+      font-size:14px;
+      border:2px solid #000;
+      background:#104699;
+      color:#ffffff
+      text-decoration:none;
     }
     .extlink:hover{
-        filter:brightness(0.95);
-        }
+      filter:brightness(0.95);
+    }
 
     /* Answer wrapper (text + image), hidden by default */
     .answrap{display:none; flex-direction:column; gap:10px;}
 
     /* 'Hide Answer' button visual state */
     .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
-    .hidebtn:hover{filter:brightness(.50);}   /*  Was .9   */
+    .hidebtn:hover{filter:brightness(.50);}
 
     /* Bottom controls layout (prev / actions / next) */
-    /* Controls row container */
     .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
-
-    /* Flexible spacer */
     .grow{flex:1;}
   </style>
 </head>
@@ -174,25 +168,21 @@
 
   <!-- Main grid wrapper (left + right panels) -->
   <div class="wrap">
-        <!-- LEFT: filters and session controls -->
+    <!-- LEFT: filters and session controls -->
     <div class="panel left">
       <!-- Categories header -->
       <div class="sectionTitle">Categories</div>
-      <!-- Checkbox list gets injected by buildCategoryUI() -->
       <div id="categories" class="catlist"></div>
 
       <!-- Session control buttons -->
       <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
-      <!-- Restart + Unhide buttons -->
-                <!-- Core actions -->
-          <div class="btnrow">
+      <div class="btnrow">
         <button id="restart" class="restart" title="Calear progress and reshuffle the deck.">Clear/Shuffle</button>
         <button id="unhide" class="unhide" title="Unhide all previously hidden cards.">Show Hidden</button>
       </div>
 
       <!-- Stats header -->
       <div class="sectionTitle" style="margin-top:10px;">Stats</div>
-      <!-- Stat chips reflect only currently filtered categories -->
       <div id="stats" class="statline">
         <span class="chip">Answered: <b id="s-seen">0</b></span>
         <span class="chip">Correct: <b id="s-ok">0</b></span>
@@ -202,60 +192,40 @@
       <div class="muted small">Stats valid for checked categories and visible cards.</div>
     </div>
 
-        <!-- RIGHT: study area (status, card, controls) -->
+    <!-- RIGHT: study area (status, card, controls) -->
     <div class="panel right">
-      <!-- Status message (loading/errors) -->
       <div id="status" class="muted">Loading deck…</div>
-      <!-- Card container -->
       <div id="card">
-        <!-- Question wrapper -->
         <div id="qwrap">
-                    <!-- Question text -->
           <div class="q" id="qtext"></div>
-                    <!-- Optional question image (shown after load) -->
           <div id="qimgbox" class="imgbox"><img id="qimg" alt=""></div>
-                    <!-- Optional external resource link -->
           <div class="linkrow" id="linkrow" style="display:none">
             <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
           </div>
         </div>
 
-                <!-- Answer wrapper (text + image) -->
         <div class="answrap" id="answrap">
-                    <!-- Answer text -->
           <div class="a" id="ans"></div>
-                    <!-- Optional answer image (shown after load) -->
           <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
         </div>
 
-                <!-- Controls row: prev / actions / next -->
         <div class="controls-row">
-                    <!-- Previous card (no grading) -->
           <button id="prev" class="next" title="Go to the previous card.">Prev</button>
 
           <div class="btnrow">
-                        <!-- Toggle answer visibility -->
             <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
-                        <!-- Grade: correct -->
             <button id="correct" class="ok" title="Mark this card correct and move on.">Got It</button>
-                        <!-- Grade: incorrect -->
             <button id="wrong" class="bad" title="Mark this card wrong and move on.">Missed It</button>
-                        <!-- Hide this card from rotation -->
             <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide</button>
           </div>
 
-                    <!-- Flexible spacer to push Next button -->
           <div class="grow"></div>
 
-                    <!-- Next card (no grading) -->
           <button id="next" class="next" title="Skip to the next card without marking.">Next</button>
         </div>
 
-                <!-- Footer: category + position -->
         <div class="footerline small">
-                    <!-- Current card category label -->
           <div id="footcat" class="muted"></div>
-                    <!-- Position: "Card N of M" -->
           <div id="pos" class="muted"></div>
         </div>
       </div>
@@ -291,6 +261,7 @@
     let fullDeck = [], categories = [], selectedCats = new Set(), hiddenIds = new Set(JSON.parse(localStorage.getItem('hiddenIds')||'[]'));
     let progress = JSON.parse(localStorage.getItem('progress')||'{"ok":{},"seen":{}}');
     let idx = 0, filtered = [];
+    let isAnswerVisible = false;
 
     function normCard(c,i){
       return {
@@ -347,6 +318,7 @@
 
     // Reset the answer area and 'Show Answer' button state
     function resetAnswerHiddenUI(){
+      isAnswerVisible = false;
       ansEl.style.display='none';
       aImgBox.style.display='none';
       aImg.removeAttribute('src'); aImg.removeAttribute('alt');
@@ -398,36 +370,40 @@
     }
 
     // Show/Hide Answer toggle
-    // Switch the answer area between hidden and visible states
-    showBtn.onclick=()=>{
-      if(!filtered.length) return;
-      const currentlyVisible = ansWrap.style.display !== 'none' && (ansEl.style.display === 'block' || aImgBox.style.display !== 'none');
-      if (currentlyVisible) {
+    showBtn.onclick = () => {
+      if (!filtered.length) return;
+
+      if (isAnswerVisible) {
         resetAnswerHiddenUI();
-      } else {
-        const c=filtered[idx];
-        let anything=false;
-        if (c.a){
-          ansEl.style.display='block';
-          ansWrap.style.display='flex';
-          anything=true;
-        }
-        if (c.answer_image){
-          aImg.src = c.answer_image;
-          aImg.alt = c.q ? `Back image — ${c.q}` : 'Back image';
-          aImgBox.style.display = 'block';
-          ansWrap.style.display='flex';
-          anything=true;
-        }
-        if(!anything){
-          ansWrap.style.display='flex';
-          ansEl.style.display='block';
-          ansEl.textContent='(No answer provided)';
-        }
-        showBtn.textContent='Hide Answer';
-        showBtn.classList.add('hidebtn');
-        showBtn.classList.remove('primary');
+        return;
       }
+
+      const c = filtered[idx];
+      let anything = false;
+
+      if (c.a){
+        ansEl.textContent = c.a;
+        ansEl.style.display = 'block';
+        ansWrap.style.display = 'flex';
+        anything = true;
+      }
+      if (c.answer_image){
+        aImg.src = c.answer_image;
+        aImg.alt = c.q ? `Back image — ${c.q}` : 'Back image';
+        aImgBox.style.display = 'block';
+        ansWrap.style.display = 'flex';
+        anything = true;
+      }
+      if (!anything){
+        ansWrap.style.display = 'flex';
+        ansEl.style.display = 'block';
+        ansEl.textContent = '(No answer provided)';
+      }
+
+      isAnswerVisible = true;
+      showBtn.textContent = 'Hide Answer';
+      showBtn.classList.add('hidebtn');
+      showBtn.classList.remove('primary');
     };
 
     // Navigation & grading handlers
