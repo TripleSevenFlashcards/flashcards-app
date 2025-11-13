@@ -55,13 +55,11 @@
 
     /* Category checklist container */
     .catlist{display:flex; flex-direction:column; gap:4px; max-height:40vh; overflow:auto; padding-right:6px}
-    /* Single category row (checkbox + label) */
     .checkboxline{display:flex; gap:6px; align-items:center}
     .checkboxline span{font-size:13px; line-height:1.15}
 
     /* Stats chip row */
     .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
-    /* Stat chip styling (pill) */
     .chip{
       background:#eef3ff; color:#0b2c5a;
       border:1px solid #cfe0ff;
@@ -92,16 +90,24 @@
     button.hidecard{background:#435663; color:#fff;}
     button.hidecard:hover{filter:brightness(.50);}
 
+    /* Show Missed toggle button */
+    button.showmissed{
+      background:#ffe08a;
+      color:#000;
+    }
+    button.showmissed.active{
+      background:#ffb347;
+    }
+
     /* Card container (question, answer, controls, footer) */
     #card{
       flex:1;
       border:1px solid #e3e8ef;
       border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
     }
-    /* Question text */
     .q{font-size:20px; font-weight:700}
 
-    /* Image boxes with light outline */
+    /* Image boxes */
     .imgbox{
       width:6in; height:auto; max-width:100%;
       background:#f6f8fb; border:1px solid #d9e1ee;
@@ -121,7 +127,6 @@
     }
 
     .small{font-size:12px}
-    /* Footer row: category + position */
     .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
 
     /* Link row for optional external resource */
@@ -159,8 +164,7 @@
 </head>
 
 <body>
-  <!-- Body: top bar, left panel (filters), right panel (study) -->
-  <!-- Top bar: brand header -->
+  <!-- Top bar -->
   <div class="topbar">
     <img class="logo" src="/static/logo.jpg" alt="logo">
     <div class="brand">Triple Seven Aviation Flashcards</div>
@@ -170,18 +174,15 @@
   <div class="wrap">
     <!-- LEFT: filters and session controls -->
     <div class="panel left">
-      <!-- Categories header -->
       <div class="sectionTitle">Categories</div>
       <div id="categories" class="catlist"></div>
 
-      <!-- Session control buttons -->
       <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
       <div class="btnrow">
         <button id="restart" class="restart" title="Calear progress and reshuffle the deck.">Clear/Shuffle</button>
         <button id="unhide" class="unhide" title="Unhide all previously hidden cards.">Show Hidden</button>
       </div>
 
-      <!-- Stats header -->
       <div class="sectionTitle" style="margin-top:10px;">Stats</div>
       <div id="stats" class="statline">
         <span class="chip">Answered: <b id="s-seen">0</b></span>
@@ -192,7 +193,7 @@
       <div class="muted small">Stats valid for checked categories and visible cards.</div>
     </div>
 
-    <!-- RIGHT: study area (status, card, controls) -->
+    <!-- RIGHT: study area -->
     <div class="panel right">
       <div id="status" class="muted">Loading deck…</div>
       <div id="card">
@@ -201,6 +202,7 @@
           <div id="qimgbox" class="imgbox"><img id="qimg" alt=""></div>
           <div class="linkrow" id="linkrow" style="display:none">
             <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
+            <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
           </div>
         </div>
 
@@ -240,6 +242,7 @@
     const qImgBox = document.getElementById('qimgbox');
     const linkRow = document.getElementById('linkrow');
     const qUrl = document.getElementById('qurl');
+    const showMissedBtn = document.getElementById('showMissedBtn');
     const ansWrap = document.getElementById('answrap');
     const ansEl = document.getElementById('ans');
     const aImg  = document.getElementById('aimg');
@@ -262,6 +265,7 @@
     let progress = JSON.parse(localStorage.getItem('progress')||'{"ok":{},"seen":{}}');
     let idx = 0, filtered = [];
     let isAnswerVisible = false;
+    let showMissedOnly = false;
 
     function normCard(c,i){
       return {
@@ -298,16 +302,27 @@
       };
     }
 
-    // Rebuild filtered deck using selectedCats and hiddenIds, then update stats
+    // Rebuild filtered deck using selectedCats, hiddenIds, and showMissedOnly
     function refilter(){
-      filtered=fullDeck.filter(c=>(!c.category||selectedCats.has(c.category))&&!hiddenIds.has(String(c.id)));
-      if(idx>=filtered.length) idx=0; updateStats();
+      filtered = fullDeck.filter(c=>{
+        const id = String(c.id);
+        const inCategory = (!c.category || selectedCats.has(c.category));
+        const notHidden = !hiddenIds.has(id);
+        const isMissed = progress.seen[id] && !progress.ok[id];
+        return inCategory && notHidden && (!showMissedOnly || isMissed);
+      });
+      if(idx>=filtered.length) idx=0;
+      updateStats();
     }
 
     // Recompute stats for current filtered deck and update UI
     function updateStats(){
       let seen=0,ok=0;
-      filtered.forEach(c=>{const id=String(c.id);if(progress.seen[id])seen++;if(progress.ok[id])ok++;});
+      filtered.forEach(c=>{
+        const id=String(c.id);
+        if(progress.seen[id])seen++;
+        if(progress.ok[id])ok++;
+      });
       const wrong = Math.max(seen - ok, 0);
       sSeen.textContent=seen; sOk.textContent=ok; sWrong.textContent=wrong;
       sAcc.textContent=seen?Math.round((ok/seen)*100)+'%':'0%';
@@ -328,7 +343,7 @@
       showBtn.classList.remove('hidebtn');
     }
 
-    // Render current card: question, optional images, link, footer, nav buttons
+    // Render current card
     function render(){
       if(!filtered.length){
         qText.textContent="No cards match filters.";
@@ -352,14 +367,16 @@
         qImg.removeAttribute('src'); qImg.removeAttribute('alt');
       }
 
+      // Link visibility and Show Missed row
       if (c.url && isHttpUrl(c.url)){
         qUrl.href = c.url;
         qUrl.textContent = 'Adtnl Rsrcs';
-        linkRow.style.display = '';
+        qUrl.style.display = 'inline-flex';
       } else {
-        linkRow.style.display='none';
         qUrl.removeAttribute('href');
+        qUrl.style.display = 'none';
       }
+      linkRow.style.display = '';
 
       resetAnswerHiddenUI();
       footCat.textContent=c.category?`Category: ${c.category}`:'Category: —';
@@ -406,13 +423,47 @@
       showBtn.classList.remove('primary');
     };
 
+    // Show Missed toggle
+    showMissedBtn.onclick = () => {
+      showMissedOnly = !showMissedOnly;
+      if (showMissedOnly){
+        showMissedBtn.classList.add('active');
+        showMissedBtn.textContent = 'Show All';
+        statusEl.textContent = 'Showing missed cards only.';
+      } else {
+        showMissedBtn.classList.remove('active');
+        showMissedBtn.textContent = 'Show Missed';
+        statusEl.textContent = 'Showing all cards.';
+      }
+      refilter();
+      render();
+    };
+
     // Navigation & grading handlers
     nextBtn.onclick=()=>{if(filtered.length){idx=Math.min(idx+1, filtered.length-1);render();}};
     prevBtn.onclick=()=>{if(filtered.length){idx=Math.max(idx-1, 0);render();}};
-    document.getElementById('correct').onclick=()=>{if(filtered.length){const id=String(filtered[idx].id);progress.ok[id]=true;progress.seen[id]=true;saveProgress();updateStats();nextBtn.click();}};
-    document.getElementById('wrong').onclick=()=>{if(filtered.length){const id=String(filtered[idx].id);delete progress.ok[id];progress.seen[id]=true;saveProgress();updateStats();nextBtn.click();}};
 
-    // Hide Card button: add current card ID to hiddenIds and rebuild deck
+    document.getElementById('correct').onclick=()=>{
+      if(!filtered.length) return;
+      const id=String(filtered[idx].id);
+      progress.ok[id]=true;
+      progress.seen[id]=true;
+      saveProgress();
+      updateStats();
+      nextBtn.click();
+    };
+
+    document.getElementById('wrong').onclick=()=>{
+      if(!filtered.length) return;
+      const id=String(filtered[idx].id);
+      delete progress.ok[id];
+      progress.seen[id]=true;
+      saveProgress();
+      updateStats();
+      nextBtn.click();
+    };
+
+    // Hide Card button
     hideBtn.onclick=()=>{
       if(!filtered.length) return;
       const id=String(filtered[idx].id);
@@ -428,7 +479,7 @@
       }
     };
 
-    // Session controls: restart session or unhide all cards
+    // Session controls
     document.getElementById('restart').onclick=()=>{
       progress={ok:{},seen:{}}; saveProgress();
       hiddenIds=new Set(); saveHidden();
@@ -440,7 +491,7 @@
       statusEl.textContent='All hidden cards are now visible.';
     };
 
-    // Boot: fetch deck, normalize, build UI, filter, render, and paint status
+    // Boot
     (async function boot(){
       statusEl.textContent='Loading deck…';
       try{
