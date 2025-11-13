@@ -117,24 +117,36 @@
       display:none; color:#1d2630; background:#f6f8fb;
       border:1px dashed #d9e1ee;             /* light dashed border */
       border-radius:10px; padding:14px; white-space:pre-wrap
-    }
+      }
 
     .small{font-size:12px}
     /* Footer row: category + position */
     .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
+
     /* Link row for optional external resource */
     .linkrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    /* External link chip */
+
+    /* Additional Resources Link/Button */
     .extlink{
-      display:inline-flex; align-items:center; gap:6px;
-      background:#e8f1ff; color:#0b2c5a;
-      border:1px solid #cfe0ff;               /* light outline */
-      border-radius:8px; padding:6px 10px;
-      text-decoration:none; font-weight:600;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding:8px 12px;
+        border-radius:8px;
+        font-weight:600;
+        font-size:14px;
+        border:2px solid #000;
+        background:#e8f1ff;
+        color:#0b2c5a;
+        text-decoration:none;
     }
-    .extlink:hover{background:#dceaff}
+    .extlink:hover{
+        filter.brightness(0.95)
+        }
+
     /* Answer wrapper (text + image), hidden by default */
     .answrap{display:none; flex-direction:column; gap:10px;}
+
     /* 'Hide Answer' button visual state */
     .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
     .hidebtn:hover{filter:brightness(.50);}   /*  Was .9   */
@@ -142,10 +154,12 @@
     /* Bottom controls layout (prev / actions / next) */
     /* Controls row container */
     .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
+
     /* Flexible spacer */
     .grow{flex:1;}
   </style>
 </head>
+
 <body>
   <!-- Body: top bar, left panel (filters), right panel (study) -->
   <!-- Top bar: brand header -->
@@ -168,7 +182,7 @@
       <!-- Restart + Unhide buttons -->
                 <!-- Core actions -->
           <div class="btnrow">
-        <button id="restart" class="restart" title="Clear progress and reshuffle the deck.">Clear/Shuffle</button>
+        <button id="restart" class="restart" title="Calear progress and reshuffle the deck.">Clear/Shuffle</button>
         <button id="unhide" class="unhide" title="Unhide all previously hidden cards.">Show Hidden</button>
       </div>
 
