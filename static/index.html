@@ -20,21 +20,9 @@
     }
 
     /* Tight top bar (logo + brand) */
-    .topbar{
-        width:100%;
-        padding:12px 0;        /* no side padding here */
-        display:flex;
-        justify-content:center; /* center inner wrapper */
-    }
-
-    .topbar-inner{
-        width:100%;
-        max-width:900px;        /* match .wrap */
-        padding:0 16px;         /* match .wrap side padding */
-        display:flex;
-        align-items:center;
-        gap:10px;
-    }
+    .topbar{width:100%; max-width:1100px; display:flex; align-items:center; gap:10px; padding:12px 16px;}
+    .logo{height:36px}
+    .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
 
     /* Grid: left column (280px) + right flexible column */
     .wrap{
@@ -78,29 +66,12 @@
       border-radius:999px; padding:6px 10px; font-size:12px
     }
 
+    /* Buttons: slightly smaller & narrower, ALL with black outline */
     .btnrow{display:flex; gap:10px; flex-wrap:wrap}
-
-    /* Shared pill style for ALL buttons and the ext-link */
-        button,
-    .extlink{
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        padding:6px 10px;      /* was 8px 12px */
-        border-radius:8px;
-        font-weight:600;
-        font-size:14px;
-        border:2px solid #000;
-        line-height:1.2;
-    }
-
-
-    /* Button-specific base tweaks */
     button{
-      cursor:pointer;
-      text-transform:capitalize;
+      padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
+      cursor:pointer; text-transform:capitalize; border:2px solid #000;
     }
-
     /* Button color variants */
     button.primary{background:var(--accent); color:#fff;}
     button.primary:hover{filter:brightness(0.50);}
@@ -119,11 +90,16 @@
     button.hidecard{background:#435663; color:#fff;}
     button.hidecard:hover{filter:brightness(.50);}
 
-    /* Show Missed toggle button (same size as others, just different colors) */
+    /* Show Missed toggle button */
     button.showmissed{
-      background:#ffe08a;
-      color:#000;
-    }
+       background:#ffe08a;
+       color:#000;
+       padding:3px 5px;           /* match .extlink */
+       display:inline-flex;       /* match behavior */
+       align-items:center;
+       justify-content:center;
+       }
+
     button.showmissed.active{
       background:#ffb347;
     }
@@ -161,8 +137,16 @@
     /* Link row for optional external resource */
     .linkrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
 
-    /* Additional Resources Link/Button (inherits shared size) */
+    /* Additional Resources Link/Button */
     .extlink{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:3px 5px;
+      border-radius:8px;
+      font-weight:600;
+      font-size:14px;
+      border:2px solid #000;
       background:#104699;
       color:#ffffff;
       text-decoration:none;
@@ -187,10 +171,8 @@
 <body>
   <!-- Top bar -->
   <div class="topbar">
-    <div class="topbar-inner">
-      <img class="logo" src="/static/logo.jpg" alt="logo">
-      <div class="brand">Triple Seven Aviation Flashcards</div>
-    </div>
+    <img class="logo" src="/static/logo.jpg" alt="logo">
+    <div class="brand">Triple Seven Aviation Flashcards</div>
   </div>
 
   <!-- Main grid wrapper (left + right panels) -->
@@ -367,23 +349,23 @@
     }
 
     // Render current card
-    function render(){
-      if(!filtered.length){
-        qText.textContent = showMissedOnly
-          ? "No missed cards match the current filters."
-          : "No cards match filters.";
-        qImgBox.style.display='none';
-        resetAnswerHiddenUI();
-        posEl.textContent=''; 
-        footCat.textContent='';
-        prevBtn.style.display='none';
-        nextBtn.style.display='none';
+function render(){
+  if(!filtered.length){
+    qText.textContent = showMissedOnly
+      ? "No missed cards match the current filters."
+      : "No cards match filters.";
+    qImgBox.style.display='none';
+    resetAnswerHiddenUI();
+    posEl.textContent=''; 
+    footCat.textContent='';
+    prevBtn.style.display='none';
+    nextBtn.style.display='none';
 
-        // Keep the row visible so the Show Missed button is still clickable
-        linkRow.style.display = '';
+    // Keep the row visible so the Show Missed button is still clickable
+    linkRow.style.display = '';
 
-        return;
-      }
+    return;
+  }
       const c=filtered[idx];
       qText.textContent = c.q || '';
 
