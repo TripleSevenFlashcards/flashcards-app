@@ -20,9 +20,14 @@
     }
 
     /* Tight top bar (logo + brand) */
-    .topbar{width:100%; max-width:1100px; display:flex; align-items:center; gap:10px; padding:12px 16px;}
-    .logo{height:36px}
-    .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
+    .topbar{
+        width:100%;
+        max-width:900px;   /* match .wrap so left edges align */
+        display:flex;
+        align-items:center;
+        gap:10px;
+        padding:12px 16px;
+    }
 
     /* Grid: left column (280px) + right flexible column */
     .wrap{
