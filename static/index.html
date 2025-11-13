@@ -92,9 +92,14 @@
 
     /* Show Missed toggle button */
     button.showmissed{
-      background:#ffe08a;
-      color:#000;
-    }
+       background:#ffe08a;
+       color:#000;
+       padding:3px 5px;           /* match .extlink */
+       display:inline-flex;       /* match behavior */
+       align-items:center;
+       justify-content:center;
+       }
+
     button.showmissed.active{
       background:#ffb347;
     }
