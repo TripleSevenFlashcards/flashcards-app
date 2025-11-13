@@ -21,12 +21,19 @@
 
     /* Tight top bar (logo + brand) */
     .topbar{
-        max-width:900px;   /* match .wrap so left edges align */
-        margin:0 auto;     /* center within the page */
+        width:100%;
+        padding:12px 0;        /* no side padding here */
+        display:flex;
+        justify-content:center; /* center inner wrapper */
+    }
+
+    .topbar-inner{
+        width:100%;
+        max-width:900px;        /* match .wrap */
+        padding:0 16px;         /* match .wrap side padding */
         display:flex;
         align-items:center;
         gap:10px;
-        padding:12px 16px;
     }
 
     /* Grid: left column (280px) + right flexible column */
@@ -180,8 +187,10 @@
 <body>
   <!-- Top bar -->
   <div class="topbar">
-    <img class="logo" src="/static/logo.jpg" alt="logo">
-    <div class="brand">Triple Seven Aviation Flashcards</div>
+    <div class="topbar-inner">
+      <img class="logo" src="/static/logo.jpg" alt="logo">
+      <div class="brand">Triple Seven Aviation Flashcards</div>
+    </div>
   </div>
 
   <!-- Main grid wrapper (left + right panels) -->
