@@ -349,17 +349,23 @@
     }
 
     // Render current card
-    function render(){
-      if(!filtered.length){
-        qText.textContent="No cards match filters.";
-        qImgBox.style.display='none';
-        linkRow.style.display='none';
-        resetAnswerHiddenUI();
-        posEl.textContent=''; footCat.textContent='';
-        prevBtn.style.display='none';
-        nextBtn.style.display='none';
-        return;
-      }
+function render(){
+  if(!filtered.length){
+    qText.textContent = showMissedOnly
+      ? "No missed cards match the current filters."
+      : "No cards match filters.";
+    qImgBox.style.display='none';
+    resetAnswerHiddenUI();
+    posEl.textContent=''; 
+    footCat.textContent='';
+    prevBtn.style.display='none';
+    nextBtn.style.display='none';
+
+    // Keep the row visible so the Show Missed button is still clickable
+    linkRow.style.display = '';
+
+    return;
+  }
       const c=filtered[idx];
       qText.textContent = c.q || '';
 
