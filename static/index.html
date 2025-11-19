@@ -50,11 +50,21 @@
             overflow:auto;
             border:none;
         }
-
+           
         /* Left panel: categories, controls, stats */
-        .left{padding:12px; display:flex; flex-direction:column;}
+        .left{
+           padding:12px;
+           display:flex;
+           flex-direction:column;
+           }
+
         /* Right panel: flashcard viewport */
-        .right{padding:16px; min-height:320px; display:flex; flex-direction:column;}
+        .right{
+           padding:16px;
+           min-height:240px;    /* shorter card panel; safe for future mobile tweaks */
+           display:flex;
+           flex-direction:column;
+           }
 
         /* Muted caption text utility */
         .muted{color:var(--muted); font-size:13px}
