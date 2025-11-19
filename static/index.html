@@ -268,9 +268,9 @@
             </div>
             <div class="muted small">Stats valid for checked categories and visible cards.</div>
 
-            <!-- Moved here from right panel: Additional Learning+ Show Missed -->
+            <!-- Moved here from right panel: Additional Learning + Show Missed -->
             <div class="linkrow" id="linkrow" style="margin-top:8px; display:none">
-                <a id="qurl" class="extlink" target="_blank" rel="noopener">Additional Learning</a>
+                <a id="qurl" class="extlink" target="_blank" rel="noopener">Addt'l Learning</a>
                 <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
             </div>
         </div>
@@ -456,7 +456,7 @@
             // Link visibility and Show Missed row
             if (c.url && isHttpUrl(c.url)){
                 qUrl.href = c.url;
-                qUrl.textContent = 'Additional Learning';
+                qUrl.textContent = 'Addt'l Learning';
                 qUrl.style.display = 'inline-flex';
             } else {
                 qUrl.removeAttribute('href');
