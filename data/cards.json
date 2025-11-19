@@ -2,9 +2,9 @@
   {
     "id": 1,
     "category": "Aerodynamics",
-    "question": "",
+    "question": "Test Question",
     "image": "/cards/Aerodynamics/01_private_aerodynamics_Q.jpg",
-    "answer": "",
+    "answer": "Test Answer",
     "answer_image": "/cards/Aerodynamics/02_private_aerodynamics_A.jpg",
     "url": "https://www.triplesevenaviation.com"
   },
