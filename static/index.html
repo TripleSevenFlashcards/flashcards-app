@@ -113,7 +113,7 @@
         align-items:center;
         justify-content:center;
         position:relative;
-        top:2px;
+        top:4px;
     }
 
     button.showmissed.active{
@@ -128,12 +128,14 @@
     }
     .q{font-size:20px; font-weight:700}
 
-    /* Image boxes */
+    /* Box that Holds the Flashcard */
     .imgbox{
       width:6in; height:auto; max-width:100%;
-      background:#f6f8fb; border:1px solid #d9e1ee;
+      background:#f6f8fb; border:2px solid #000000;
       border-radius:10px; display:none; overflow:hidden; margin-top:8px;
     }
+
+    /* Controls the layout of the card itself when displayed */
     .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
 
     /* Answer text box */
@@ -167,7 +169,7 @@
         color:#ffffff;
         text-decoration:none;
         position:relative;
-        top:2px;
+        top:4px;
     }
     .extlink:hover{
       filter:brightness(0.95);
