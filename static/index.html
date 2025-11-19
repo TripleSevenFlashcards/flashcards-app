@@ -106,13 +106,15 @@
 
     /* Show Missed toggle button */
     button.showmissed{
-       background:#ffe08a;
-       color:#000;
-       padding:3px 5px;           /* match .extlink */
-       display:inline-flex;       /* match behavior */
-       align-items:center;
-       justify-content:center;
-       }
+        background:#ffe08a;
+        color:#000;
+        padding:3px 5px;           /* match .extlink */
+        display:inline-flex;       /* match behavior */
+        align-items:center;
+        justify-content:center;
+        position:relative;
+        top:2px;
+    }
 
     button.showmissed.active{
       background:#ffb347;
@@ -153,17 +155,19 @@
 
     /* Additional Resources Link/Button */
     .extlink{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      padding:3px 5px;
-      border-radius:8px;
-      font-weight:600;
-      font-size:14px;
-      border:2px solid #000;
-      background:#104699;
-      color:#ffffff;
-      text-decoration:none;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding:3px 5px;
+        border-radius:8px;
+        font-weight:600;
+        font-size:14px;
+        border:2px solid #000;
+        background:#104699;
+        color:#ffffff;
+        text-decoration:none;
+        position:relative;
+        top:2px;
     }
     .extlink:hover{
       filter:brightness(0.95);
