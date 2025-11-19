@@ -208,7 +208,7 @@
             display:inline-flex;
             align-items:center;
             justify-content:center;
-            padding:2px 5px;
+            padding:3px 5px;
             border-radius:8px;
             font-weight:600;
             font-size:14px;
@@ -221,7 +221,7 @@
             }
 
         .extlink:hover{
-            filter:brightness(0.50);
+            filter:brightness(0.95);
             }
 
         /* Answer wrapper (text + image), hidden by default */
@@ -267,7 +267,7 @@
 
             <!-- Moved here from right panel: Adtnl Rsrcs + Show Missed -->
             <div class="linkrow" id="linkrow" style="margin-top:8px; display:none">
-                <a id="qurl" class="extlink" target="_blank" rel="noopener">Addt'l Learning</a>
+                <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
                 <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
             </div>
         </div>
@@ -453,7 +453,7 @@
             // Link visibility and Show Missed row
             if (c.url && isHttpUrl(c.url)){
                 qUrl.href = c.url;
-                qUrl.textContent = 'Addt'l Learning';
+                qUrl.textContent = 'Adtnl Rsrcs';
                 qUrl.style.display = 'inline-flex';
             } else {
                 qUrl.removeAttribute('href');
