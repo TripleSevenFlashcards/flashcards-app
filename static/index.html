@@ -138,7 +138,7 @@
         button.ok:hover{filter:brightness(0.50);}
 
         button.bad{background:#ffcccc; color:#000;}
-        button.bad:hover{background:#b02a37; color:#fff;}
+        button.bad:hover{filter:brightness(0.50);}
 
         button.next{background:var(--next); color:#fff;}
         button.next:hover{filter:brightness(0.50);}
@@ -162,11 +162,14 @@
             justify-content:center;
             position:relative;
             top:4px;
-        }
+            }
 
         button.showmissed.active{
             background:#ffb347;
-        }
+            }
+
+        button.showmissed:hover{filter:brightness(.50);}
+
 
         /* Right Hand container (question, answer, controls, footer) */
         #card{
