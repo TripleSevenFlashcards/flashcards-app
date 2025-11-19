@@ -138,7 +138,7 @@
         button.ok:hover{filter:brightness(0.50);}
 
         button.bad{background:#ffcccc; color:#000;}
-        button.bad:hover{filter:brightness(0.50);}
+        button.bad:hover{background:#b02a37; color:#fff;}
 
         button.next{background:var(--next); color:#fff;}
         button.next:hover{filter:brightness(0.50);}
@@ -162,14 +162,11 @@
             justify-content:center;
             position:relative;
             top:4px;
-            }
+        }
 
         button.showmissed.active{
             background:#ffb347;
-            }
-
-        button.showmissed:hover{filter:brightness(.50);}
-
+        }
 
         /* Right Hand container (question, answer, controls, footer) */
         #card{
@@ -211,7 +208,7 @@
             display:inline-flex;
             align-items:center;
             justify-content:center;
-            padding:2px 5px;  /* changed from 3px to 2px  */
+            padding:3px 5px;
             border-radius:8px;
             font-weight:600;
             font-size:14px;
@@ -268,9 +265,9 @@
             </div>
             <div class="muted small">Stats valid for checked categories and visible cards.</div>
 
-            <!-- Moved here from right panel: Additional Learning + Show Missed -->
+            <!-- Moved here from right panel: Adtnl Rsrcs + Show Missed -->
             <div class="linkrow" id="linkrow" style="margin-top:8px; display:none">
-                <a id="qurl" class="extlink" target="_blank" rel="noopener">Addt'l Learning</a>
+                <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
                 <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
             </div>
         </div>
@@ -300,7 +297,7 @@
                     <button id="prev" class="next" title="Go to the previous card.">Prev</button>
 
                     <div class="btnrow">
-                        <button id="show" class="primary" title="Reveal or hide the answer for this card.">The Answer</button>
+                        <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
                         <button id="correct" class="ok" title="Mark this card correct and move on.">Got It</button>
                         <button id="wrong" class="bad" title="Mark this card wrong and move on.">Missed It</button>
                         <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide</button>
@@ -411,14 +408,14 @@
         // Validate that a URL is http(s)
         function isHttpUrl(u){return /^https?:\/\//i.test(u);}
 
-        // Reset the answer area and 'The Answer' button state
+        // Reset the answer area and 'Show Answer' button state
         function resetAnswerHiddenUI(){
             isAnswerVisible = false;
             ansEl.style.display='none';
             aImgBox.style.display='none';
             aImg.removeAttribute('src'); aImg.removeAttribute('alt');
             ansWrap.style.display='none';
-            showBtn.textContent='The Answer';
+            showBtn.textContent='Show Answer';
             showBtn.classList.add('primary');
             showBtn.classList.remove('hidebtn');
         }
@@ -456,7 +453,7 @@
             // Link visibility and Show Missed row
             if (c.url && isHttpUrl(c.url)){
                 qUrl.href = c.url;
-                qUrl.textContent = 'Addt'l Learning';
+                qUrl.textContent = 'Adtnl Rsrcs';
                 qUrl.style.display = 'inline-flex';
             } else {
                 qUrl.removeAttribute('href');
