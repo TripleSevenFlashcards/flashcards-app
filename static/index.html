@@ -236,8 +236,13 @@
         /* Answer wrapper (text + image), hidden by default */
         .answrap{display:none; flex-direction:column; gap:10px;}
 
-        /* 'Hide Answer' button visual state */
-        .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
+        /* 'Hide Answer' button appearance */
+        .hidebtn{
+            background:#ffd400;
+            color:#000;
+            border:2px solid #000000; /* was ffd400 */
+            }
+
         .hidebtn:hover{filter:brightness(.50);}
 
         /* Bottom controls layout (prev / actions / next) */
