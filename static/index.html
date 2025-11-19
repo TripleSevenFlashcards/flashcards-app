@@ -92,18 +92,18 @@
             max-height:40vh;
             overflow:auto;
             padding-right:6px;
-        }
+            }
 
         .checkboxline{
             display:flex;
             gap:6px;
             align-items:center
-        }
+            }
 
         .checkboxline span{
             font-size:13px;
             line-height:1.15
-        }
+            }
 
         /* Stats chip row */
         .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
@@ -111,26 +111,27 @@
             background:#eef3ff; color:#0b2c5a;
             border:1px solid #cfe0ff;
             border-radius:999px; padding:6px 10px; font-size:12px
-        }
+            }
 
-        /* Buttons: slightly smaller & narrower, ALL with black outline */
+        /* Handles layout of the button row below the card */
         .btnrow{
 	    display:flex;
             gap:10px;
             flex-wrap:wrap
             }
 
+        /* Establishes a consistant format across the buttons in btnrow */
         button{
             padding:3px 5px;
             border-radius:8px;
             font-weight:600;
-            font-size:14px;
+            font-size:12px;  /* Was 14px, experimenting with 12px */
             cursor:pointer;
             text-transform:capitalize;
             border:2px solid #000;
             }
 
-        /* Button color variants */
+        /* Applies individual apperance/hover behavior based on which button we are talking about */
         button.primary{background:var(--accent); color:#fff;}
         button.primary:hover{filter:brightness(0.50);}
 
@@ -149,11 +150,11 @@
         button.unhide{background:#1b8a3a; color:#fff;}
         button.unhide:hover{filter:brightness(.50);}
 
-        /* Hide Card Button*/
         button.hidecard{background:#435663; color:#fff;}
         button.hidecard:hover{filter:brightness(.50);}
 
-        /* Show Missed toggle button */
+        /* We code the "Show Missed" button a bit differently because it is a toggle button */
+        /* We only code the styles that are not already coded in "button" class above */
         button.showmissed{
             background:#ffe08a;
             color:#000;
@@ -162,18 +163,18 @@
             justify-content:center;
             position:relative;
             top:4px;
-        }
+            }
 
         button.showmissed.active{
             background:#ffb347;
-        }
+            }
 
         /* Right Hand container (question, answer, controls, footer) */
         #card{
             flex:1;
             border:1px solid #e3e8ef;
             border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
-        }
+            }
 
         .q{font-size:20px; font-weight:700}
 
@@ -208,7 +209,7 @@
             display:inline-flex;
             align-items:center;
             justify-content:center;
-            padding:3px 5px;
+            padding:2px 5px;
             border-radius:8px;
             font-weight:600;
             font-size:14px;
@@ -221,7 +222,7 @@
             }
 
         .extlink:hover{
-            filter:brightness(0.95);
+            filter:brightness(0.50);
             }
 
         /* Answer wrapper (text + image), hidden by default */
@@ -267,7 +268,7 @@
 
             <!-- Moved here from right panel: Adtnl Rsrcs + Show Missed -->
             <div class="linkrow" id="linkrow" style="margin-top:8px; display:none">
-                <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
+                <a id="qurl" class="extlink" target="_blank" rel="noopener">Addt'l Learning</a>
                 <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
             </div>
         </div>
@@ -297,7 +298,7 @@
                     <button id="prev" class="next" title="Go to the previous card.">Prev</button>
 
                     <div class="btnrow">
-                        <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
+                        <button id="show" class="primary" title="Reveal or hide the answer for this card.">Answer</button>
                         <button id="correct" class="ok" title="Mark this card correct and move on.">Got It</button>
                         <button id="wrong" class="bad" title="Mark this card wrong and move on.">Missed It</button>
                         <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide</button>
@@ -408,14 +409,14 @@
         // Validate that a URL is http(s)
         function isHttpUrl(u){return /^https?:\/\//i.test(u);}
 
-        // Reset the answer area and 'Show Answer' button state
+        // Reset the answer area and 'Answer' button state
         function resetAnswerHiddenUI(){
             isAnswerVisible = false;
             ansEl.style.display='none';
             aImgBox.style.display='none';
             aImg.removeAttribute('src'); aImg.removeAttribute('alt');
             ansWrap.style.display='none';
-            showBtn.textContent='Show Answer';
+            showBtn.textContent='Answer';
             showBtn.classList.add('primary');
             showBtn.classList.remove('hidebtn');
         }
@@ -453,7 +454,7 @@
             // Link visibility and Show Missed row
             if (c.url && isHttpUrl(c.url)){
                 qUrl.href = c.url;
-                qUrl.textContent = 'Adtnl Rsrcs';
+                qUrl.textContent = 'Addt'l Learning';
                 qUrl.style.display = 'inline-flex';
             } else {
                 qUrl.removeAttribute('href');
