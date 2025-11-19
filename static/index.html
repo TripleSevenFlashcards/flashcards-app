@@ -297,7 +297,7 @@
                     <button id="prev" class="next" title="Go to the previous card.">Prev</button>
 
                     <div class="btnrow">
-                        <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
+                        <button id="show" class="primary" title="Reveal or hide the answer for this card.">The Answer</button>
                         <button id="correct" class="ok" title="Mark this card correct and move on.">Got It</button>
                         <button id="wrong" class="bad" title="Mark this card wrong and move on.">Missed It</button>
                         <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide</button>
@@ -408,14 +408,14 @@
         // Validate that a URL is http(s)
         function isHttpUrl(u){return /^https?:\/\//i.test(u);}
 
-        // Reset the answer area and 'Show Answer' button state
+        // Reset the answer area and 'The Answer' button state
         function resetAnswerHiddenUI(){
             isAnswerVisible = false;
             ansEl.style.display='none';
             aImgBox.style.display='none';
             aImg.removeAttribute('src'); aImg.removeAttribute('alt');
             ansWrap.style.display='none';
-            showBtn.textContent='Show Answer';
+            showBtn.textContent='The Answer';
             showBtn.classList.add('primary');
             showBtn.classList.remove('hidebtn');
         }
