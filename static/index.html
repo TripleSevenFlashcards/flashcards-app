@@ -237,6 +237,7 @@
     <!-- Main grid wrapper (left + right panels) -->
     <div class="wrap">
         <!-- LEFT: filters, controls, stats -->
+
         <div class="panel left">
             <div class="sectionTitle">Categories</div>
             <div id="categories" class="catlist"></div>
@@ -253,7 +254,14 @@
                 <span class="chip">Accuracy: <b id="s-acc">0%</b></span>
             </div>
             <div class="muted small">Stats valid for checked categories and visible cards.</div>
+
+            <!-- Moved here from right panel: Adtnl Rsrcs + Show Missed -->
+            <div class="linkrow" id="linkrow" style="margin-top:8px; display:none">
+                <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
+                <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
+            </div>
         </div>
+
 
         <!-- RIGHT: study area -->
         <div class="panel right">
