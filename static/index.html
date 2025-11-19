@@ -244,9 +244,15 @@
             <div class="muted small">Stats valid for checked categories and visible cards.</div>
         </div>
 
+
         <!-- RIGHT: study area -->
         <div class="panel right">
-            <div id="status" class="muted">Loading deck…</div>
+            <div class="topstatus small">
+                <div id="status" class="muted">Loading deck…</div>
+                <div id="footcat" class="muted"></div>
+                <div id="pos" class="muted"></div>
+            </div>
+
             <div id="card">
                 <div id="qwrap">
                     <div class="q" id="qtext"></div>
@@ -275,11 +281,6 @@
                     <div class="grow"></div>
 
                     <button id="next" class="next" title="Skip to the next card without marking.">Next</button>
-                </div>
-
-                <div class="footerline small">
-                    <div id="footcat" class="muted"></div>
-                    <div id="pos" class="muted"></div>
                 </div>
             </div>
         </div>
