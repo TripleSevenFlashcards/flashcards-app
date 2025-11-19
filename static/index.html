@@ -114,11 +114,21 @@
         }
 
         /* Buttons: slightly smaller & narrower, ALL with black outline */
-        .btnrow{display:flex; gap:10px; flex-wrap:wrap}
-        button{
-            padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
-            cursor:pointer; text-transform:capitalize; border:2px solid #000;
-        }
+        .btnrow{
+	    display:flex;
+            gap:10px;
+            flex-wrap:wrap
+            }
+
+        button.showmissed{
+	    background:#ffe08a;
+	    color:#000;
+	    display:inline-flex;
+	    align-items:center;
+	    justify-content:center;
+	    position:relative;
+	    top:4px;
+	    }
 
         /* Button color variants */
         button.primary{background:var(--accent); color:#fff;}
@@ -276,10 +286,6 @@
                 <div id="qwrap">
                     <div class="q" id="qtext"></div>
                     <div id="qimgbox" class="imgbox"><img id="qimg" alt=""></div>
-                    <div class="linkrow" id="linkrow" style="display:none">
-                        <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
-                        <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
-                    </div>
                 </div>
 
                 <div class="answrap" id="answrap">
