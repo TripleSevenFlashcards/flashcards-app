@@ -1,543 +1,535 @@
 <!doctype html>
 <html>
 <head>
-  <!-- Head: metadata, viewport, inline styles -->
-  <meta charset="utf-8" />
-  <title>Flashcards</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    /* Styles: theme tokens, layout, buttons, components */
-    /* Theme constants (CSS variables) */
-    :root{
-      --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
-      --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
-    }
-    html,body{height:100%}
-    body{
-      margin:0; font-family: system-ui, Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 20% -10%, #1a3f80 0%, transparent 60%), linear-gradient(135deg,var(--bg1),var(--bg2));
-      color:#fff; display:flex; flex-direction:column; align-items:center;
-    }
+    <!-- Head: metadata, viewport, inline styles -->
+    <meta charset="utf-8" />
+    <title>Flashcards</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        /* Styles: theme tokens, layout, buttons, components */
+        /* Theme constants (CSS variables) */
+        :root{
+            --bg1:#0c2146; --bg2:#0f356e; --panel:#ffffff; --accent:#2b8cff; --text:#0a0a0a; --muted:#5c646d;
+            --ok:#1b8a3a; --bad:#b02a37; --next:#0d2c6d;
+        }
+        html,body{height:100%}
+        body{
+            margin:0; font-family: system-ui, Arial, sans-serif;
+            background: radial-gradient(1200px 600px at 20% -10%, #1a3f80 0%, transparent 60%), linear-gradient(135deg,var(--bg1),var(--bg2));
+            color:#fff; display:flex; flex-direction:column; align-items:center;
+        }
 
-/*
-    .topbar{
-           width:100%; max-width:1100px; display:flex; align-items:center; gap:10px; padding:12px 16px;
-      }
-*/
+        /* Tight top bar (logo + brand) */
+        .topbar{
+            width:100%;
+            max-width:900px;              /* match .wrap's max-width */
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding:12px 16px 12px 28px;  /* 16 (wrap) + 12 (panel) */
+        }
 
-    /* Tight top bar (logo + brand) */
-    .topbar{
-        width:100%;
-        max-width:900px;              /* match .wrap's max-width */
-        display:flex;
-        align-items:center;
-        gap:10px;
-        padding:12px 16px 12px 28px;  /* 16 (wrap) + 12 (panel) */
-    }
+        .logo{height:36px}
+        .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
 
-    .logo{height:36px}
-    .brand{font-size:18px; font-weight:700; letter-spacing:.2px}
+        /* Grid: left column (280px) + right flexible column */
+        .wrap{
+            width:100%;
+            max-width:900px;
+            display:grid;
+            grid-template-columns: 280px 1fr; /* left = 280px, right = rest */
+            gap:14px;
+            padding:0 16px 16px;
+        }
 
-    /* Grid: left column (280px) + right flexible column */
-    .wrap{
-      width:100%;
-      max-width:900px;
-      display:grid;
-      grid-template-columns: 280px 1fr; /* left = 280px, right = rest */
-      gap:14px;
-      padding:0 16px 16px;
-    }
+        /* Panel container (shared card UI) */
+        .panel{
+            background:var(--panel); color:var(--text);
+            border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+            max-height: calc(100vh - 140px);
+            overflow:auto;
+            border:none;
+        }
 
-    /* Panel container (shared card UI) */
-    .panel{
-      background:var(--panel); color:var(--text);
-      border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      max-height: calc(100vh - 140px);
-      overflow:auto;
-      border:none;
-    }
+        /* Left panel: categories, controls, stats */
+        .left{padding:12px; display:flex; flex-direction:column;}
+        /* Right panel: flashcard viewport */
+        .right{padding:16px; min-height:320px; display:flex; flex-direction:column;}
 
-    /* Left panel: categories, session controls, stats */
-    .left{padding:12px; display:flex; flex-direction:column;}
-    /* Right panel: flashcard viewport */
-    .right{padding:16px; min-height:320px; display:flex; flex-direction:column;}
+        /* Muted caption text utility */
+        .muted{color:var(--muted); font-size:13px}
+        /* Section heading label */
+        .sectionTitle{font-weight:700; margin:6px 0 10px}
 
-    /* Muted caption text utility */
-    .muted{color:var(--muted); font-size:13px}
-    /* Section heading label */
-    .sectionTitle{font-weight:700; margin:6px 0 10px}
+        /* Category checklist container */
+        .catlist{display:flex; flex-direction:column; gap:4px; max-height:40vh; overflow:auto; padding-right:6px}
+        .checkboxline{display:flex; gap:6px; align-items:center}
+        .checkboxline span{font-size:13px; line-height:1.15}
 
-    /* Category checklist container */
-    .catlist{display:flex; flex-direction:column; gap:4px; max-height:40vh; overflow:auto; padding-right:6px}
-    .checkboxline{display:flex; gap:6px; align-items:center}
-    .checkboxline span{font-size:13px; line-height:1.15}
+        /* Stats chip row */
+        .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
+        .chip{
+            background:#eef3ff; color:#0b2c5a;
+            border:1px solid #cfe0ff;
+            border-radius:999px; padding:6px 10px; font-size:12px
+        }
 
-    /* Stats chip row */
-    .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
-    .chip{
-      background:#eef3ff; color:#0b2c5a;
-      border:1px solid #cfe0ff;
-      border-radius:999px; padding:6px 10px; font-size:12px
-    }
+        /* Buttons: slightly smaller & narrower, ALL with black outline */
+        .btnrow{display:flex; gap:10px; flex-wrap:wrap}
+        button{
+            padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
+            cursor:pointer; text-transform:capitalize; border:2px solid #000;
+        }
+        /* Button color variants */
+        button.primary{background:var(--accent); color:#fff;}
+        button.primary:hover{filter:brightness(0.50);}
+        button.ok{background:var(--ok); color:#fff;}
+        button.ok:hover{filter:brightness(0.50);}
+        button.bad{background:#ffcccc; color:#000;}
+        button.bad:hover{background:#b02a37; color:#fff;}
+        button.next{background:var(--next); color:#fff;}
+        button.next:hover{filter:brightness(0.50);}
+        button.restart{background:#b02a37; color:#fff;}
+        button.restart:hover{filter:brightness(.50);}
+        button.unhide{background:#1b8a3a; color:#fff;}
+        button.unhide:hover{filter:brightness(.50);}
 
-    /* Buttons: slightly smaller & narrower, ALL with black outline */
-    .btnrow{display:flex; gap:10px; flex-wrap:wrap}
-    button{
-      padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
-      cursor:pointer; text-transform:capitalize; border:2px solid #000;
-    }
-    /* Button color variants */
-    button.primary{background:var(--accent); color:#fff;}
-    button.primary:hover{filter:brightness(0.50);}
-    button.ok{background:var(--ok); color:#fff;}
-    button.ok:hover{filter:brightness(0.50);}
-    button.bad{background:#ffcccc; color:#000;}
-    button.bad:hover{background:#b02a37; color:#fff;}
-    button.next{background:var(--next); color:#fff;}
-    button.next:hover{filter:brightness(0.50);}
-    button.restart{background:#b02a37; color:#fff;}
-    button.restart:hover{filter:brightness(.50);}
-    button.unhide{background:#1b8a3a; color:#fff;}
-    button.unhide:hover{filter:brightness(.50);}
+        /* Hide Card */
+        button.hidecard{background:#435663; color:#fff;}
+        button.hidecard:hover{filter:brightness(.50);}
 
-    /* Hide Card */
-    button.hidecard{background:#435663; color:#fff;}
-    button.hidecard:hover{filter:brightness(.50);}
+        /* Show Missed toggle button */
+        button.showmissed{
+            background:#ffe08a;
+            color:#000;
+            padding:3px 5px;           /* match .extlink */
+            display:inline-flex;       /* match behavior */
+            align-items:center;
+            justify-content:center;
+            position:relative;
+            top:4px;
+        }
 
-    /* Show Missed toggle button */
-    button.showmissed{
-        background:#ffe08a;
-        color:#000;
-        padding:3px 5px;           /* match .extlink */
-        display:inline-flex;       /* match behavior */
-        align-items:center;
-        justify-content:center;
-        position:relative;
-        top:4px;
-    }
+        button.showmissed.active{
+            background:#ffb347;
+        }
 
-    button.showmissed.active{
-      background:#ffb347;
-    }
+        /* Card container (question, answer, controls, footer) */
+        #card{
+            flex:1;
+            border:1px solid #e3e8ef;
+            border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
+        }
+        .q{font-size:20px; font-weight:700}
 
-    /* Card container (question, answer, controls, footer) */
-    #card{
-      flex:1;
-      border:1px solid #e3e8ef;
-      border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
-    }
-    .q{font-size:20px; font-weight:700}
+        /* Box that holds the flashcard image */
+        .imgbox{
+            width:6in; height:auto; max-width:100%;
+            background:#f6f8fb; border:2px solid #000000;
+            border-radius:10px; display:none; overflow:hidden; margin-top:8px;
+        }
 
-    /* Box that Holds the Flashcard */
-    .imgbox{
-      width:6in; height:auto; max-width:100%;
-      background:#f6f8fb; border:2px solid #000000;
-      border-radius:10px; display:none; overflow:hidden; margin-top:8px;
-    }
+        /* Controls the layout of the card itself when displayed */
+        .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
 
-    /* Controls the layout of the card itself when displayed */
-    .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
+        /* Answer text box */
+        .a{
+            display:none;
+            color:#1d2630;
+            background:#f6f8fb;
+            border:1px dashed #d9e1ee;
+            border-radius:10px;
+            padding:14px;
+            white-space:pre-wrap;
+        }
 
-    /* Answer text box */
-    .a{
-      display:none;
-      color:#1d2630;
-      background:#f6f8fb;
-      border:1px dashed #d9e1ee;
-      border-radius:10px;
-      padding:14px;
-      white-space:pre-wrap;
-    }
+        .small{font-size:12px}
+        .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
 
-    .small{font-size:12px}
-    .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
+        /* Link row for optional external resource */
+        .linkrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
 
-    /* Link row for optional external resource */
-    .linkrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+        /* Additional Resources Link/Button */
+        .extlink{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            padding:3px 5px;
+            border-radius:8px;
+            font-weight:600;
+            font-size:14px;
+            border:2px solid #000;
+            background:#104699;
+            color:#ffffff;
+            text-decoration:none;
+            position:relative;
+            top:4px;
+        }
+        .extlink:hover{
+            filter:brightness(0.95);
+        }
 
-    /* Additional Resources Link/Button */
-    .extlink{
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
-        padding:3px 5px;
-        border-radius:8px;
-        font-weight:600;
-        font-size:14px;
-        border:2px solid #000;
-        background:#104699;
-        color:#ffffff;
-        text-decoration:none;
-        position:relative;
-        top:4px;
-    }
-    .extlink:hover{
-      filter:brightness(0.95);
-    }
+        /* Answer wrapper (text + image), hidden by default */
+        .answrap{display:none; flex-direction:column; gap:10px;}
 
-    /* Answer wrapper (text + image), hidden by default */
-    .answrap{display:none; flex-direction:column; gap:10px;}
+        /* 'Hide Answer' button visual state */
+        .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
+        .hidebtn:hover{filter:brightness(.50);}
 
-    /* 'Hide Answer' button visual state */
-    .hidebtn{background:#ffd400; color:#000; border:2px solid #ffd400;}
-    .hidebtn:hover{filter:brightness(.50);}
-
-    /* Bottom controls layout (prev / actions / next) */
-    .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
-    .grow{flex:1;}
-  </style>
+        /* Bottom controls layout (prev / actions / next) */
+        .controls-row{display:flex; align-items:center; gap:10px; width:100%;}
+        .grow{flex:1;}
+    </style>
 </head>
 
 <body>
-  <!-- Top bar -->
-  <div class="topbar">
-    <img class="logo" src="/static/logo.jpg" alt="logo">
-    <div class="brand">Triple Seven Aviation Flashcards</div>
-  </div>
-
-  <!-- Main grid wrapper (left + right panels) -->
-  <div class="wrap">
-    <!-- LEFT: filters and session controls -->
-    <div class="panel left">
-      <div class="sectionTitle">Categories</div>
-      <div id="categories" class="catlist"></div>
-
-      <div class="sectionTitle" style="margin-top:10px;">Session Controls</div>
-      <div class="btnrow">
-        <button id="restart" class="restart" title="Calear progress and reshuffle the deck.">Clear/Shuffle</button>
-        <button id="unhide" class="unhide" title="Unhide all previously hidden cards.">Show Hidden</button>
-      </div>
-
-      <div class="sectionTitle" style="margin-top:10px;">Stats</div>
-      <div id="stats" class="statline">
-        <span class="chip">Answered: <b id="s-seen">0</b></span>
-        <span class="chip">Correct: <b id="s-ok">0</b></span>
-        <span class="chip">Incorrect: <b id="s-wrong">0</b></span>
-        <span class="chip">Accuracy: <b id="s-acc">0%</b></span>
-      </div>
-      <div class="muted small">Stats valid for checked categories and visible cards.</div>
+    <!-- Top bar -->
+    <div class="topbar">
+        <img class="logo" src="/static/logo.jpg" alt="logo">
+        <div class="brand">Triple Seven Aviation Flashcards</div>
     </div>
 
-    <!-- RIGHT: study area -->
-    <div class="panel right">
-      <div id="status" class="muted">Loading deck…</div>
-      <div id="card">
-        <div id="qwrap">
-          <div class="q" id="qtext"></div>
-          <div id="qimgbox" class="imgbox"><img id="qimg" alt=""></div>
-          <div class="linkrow" id="linkrow" style="display:none">
-            <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
-            <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
-          </div>
+    <!-- Main grid wrapper (left + right panels) -->
+    <div class="wrap">
+        <!-- LEFT: filters, controls, stats -->
+        <div class="panel left">
+            <div class="sectionTitle">Categories</div>
+            <div id="categories" class="catlist"></div>
+
+            <div class="btnrow" style="margin-top:10px;">
+                <button id="restart" class="restart" title="Clear progress and reshuffle the deck.">Clear/Shuffle</button>
+                <button id="unhide" class="unhide" title="Unhide all previously hidden cards.">Show Hidden</button>
+            </div>
+
+            <div id="stats" class="statline" style="margin-top:10px;">
+                <span class="chip">Answered: <b id="s-seen">0</b></span>
+                <span class="chip">Correct: <b id="s-ok">0</b></span>
+                <span class="chip">Incorrect: <b id="s-wrong">0</b></span>
+                <span class="chip">Accuracy: <b id="s-acc">0%</b></span>
+            </div>
+            <div class="muted small">Stats valid for checked categories and visible cards.</div>
         </div>
 
-        <div class="answrap" id="answrap">
-          <div class="a" id="ans"></div>
-          <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
+        <!-- RIGHT: study area -->
+        <div class="panel right">
+            <div id="status" class="muted">Loading deck…</div>
+            <div id="card">
+                <div id="qwrap">
+                    <div class="q" id="qtext"></div>
+                    <div id="qimgbox" class="imgbox"><img id="qimg" alt=""></div>
+                    <div class="linkrow" id="linkrow" style="display:none">
+                        <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
+                        <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
+                    </div>
+                </div>
+
+                <div class="answrap" id="answrap">
+                    <div class="a" id="ans"></div>
+                    <div id="aimgbox" class="imgbox"><img id="aimg" alt=""></div>
+                </div>
+
+                <div class="controls-row">
+                    <button id="prev" class="next" title="Go to the previous card.">Prev</button>
+
+                    <div class="btnrow">
+                        <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
+                        <button id="correct" class="ok" title="Mark this card correct and move on.">Got It</button>
+                        <button id="wrong" class="bad" title="Mark this card wrong and move on.">Missed It</button>
+                        <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide</button>
+                    </div>
+
+                    <div class="grow"></div>
+
+                    <button id="next" class="next" title="Skip to the next card without marking.">Next</button>
+                </div>
+
+                <div class="footerline small">
+                    <div id="footcat" class="muted"></div>
+                    <div id="pos" class="muted"></div>
+                </div>
+            </div>
         </div>
-
-        <div class="controls-row">
-          <button id="prev" class="next" title="Go to the previous card.">Prev</button>
-
-          <div class="btnrow">
-            <button id="show" class="primary" title="Reveal or hide the answer for this card.">Show Answer</button>
-            <button id="correct" class="ok" title="Mark this card correct and move on.">Got It</button>
-            <button id="wrong" class="bad" title="Mark this card wrong and move on.">Missed It</button>
-            <button id="hideCardBtn" class="hidecard" title="Hide this card from rotation.">Hide</button>
-          </div>
-
-          <div class="grow"></div>
-
-          <button id="next" class="next" title="Skip to the next card without marking.">Next</button>
-        </div>
-
-        <div class="footerline small">
-          <div id="footcat" class="muted"></div>
-          <div id="pos" class="muted"></div>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <script>
-    // Script: DOM refs, state, helpers, rendering, and boot
-    const statusEl = document.getElementById('status');
-    const qText = document.getElementById('qtext');
-    const qImg  = document.getElementById('qimg');
-    const qImgBox = document.getElementById('qimgbox');
-    const linkRow = document.getElementById('linkrow');
-    const qUrl = document.getElementById('qurl');
-    const showMissedBtn = document.getElementById('showMissedBtn');
-    const ansWrap = document.getElementById('answrap');
-    const ansEl = document.getElementById('ans');
-    const aImg  = document.getElementById('aimg');
-    const aImgBox = document.getElementById('aimgbox');
-    const posEl = document.getElementById('pos');
-    const footCat = document.getElementById('footcat');
-    const catsEl = document.getElementById('categories');
+    <script>
+        // Script: DOM refs, state, helpers, rendering, and boot
+        const statusEl = document.getElementById('status');
+        const qText = document.getElementById('qtext');
+        const qImg  = document.getElementById('qimg');
+        const qImgBox = document.getElementById('qimgbox');
+        const linkRow = document.getElementById('linkrow');
+        const qUrl = document.getElementById('qurl');
+        const showMissedBtn = document.getElementById('showMissedBtn');
+        const ansWrap = document.getElementById('answrap');
+        const ansEl = document.getElementById('ans');
+        const aImg  = document.getElementById('aimg');
+        const aImgBox = document.getElementById('aimgbox');
+        const posEl = document.getElementById('pos');
+        const footCat = document.getElementById('footcat');
+        const catsEl = document.getElementById('categories');
 
-    const sSeen = document.getElementById('s-seen');
-    const sOk = document.getElementById('s-ok');
-    const sWrong = document.getElementById('s-wrong');
-    const sAcc = document.getElementById('s-acc');
+        const sSeen = document.getElementById('s-seen');
+        const sOk = document.getElementById('s-ok');
+        const sWrong = document.getElementById('s-wrong');
+        const sAcc = document.getElementById('s-acc');
 
-    const showBtn = document.getElementById('show');
-    const prevBtn = document.getElementById('prev');
-    const nextBtn = document.getElementById('next');
-    const hideBtn = document.getElementById('hideCardBtn');
+        const showBtn = document.getElementById('show');
+        const prevBtn = document.getElementById('prev');
+        const nextBtn = document.getElementById('next');
+        const hideBtn = document.getElementById('hideCardBtn');
 
-    let fullDeck = [], categories = [], selectedCats = new Set(), hiddenIds = new Set(JSON.parse(localStorage.getItem('hiddenIds')||'[]'));
-    let progress = JSON.parse(localStorage.getItem('progress')||'{"ok":{},"seen":{}}');
-    let idx = 0, filtered = [];
-    let isAnswerVisible = false;
-    let showMissedOnly = false;
+        let fullDeck = [], categories = [], selectedCats = new Set(), hiddenIds = new Set(JSON.parse(localStorage.getItem('hiddenIds')||'[]'));
+        let progress = JSON.parse(localStorage.getItem('progress')||'{"ok":{},"seen":{}}');
+        let idx = 0, filtered = [];
+        let isAnswerVisible = false;
+        let showMissedOnly = false;
 
-    function normCard(c,i){
-      return {
-        id: c.id ?? i,
-        q:  c.question ?? c.q ?? '',
-        a:  c.answer ?? c.a ?? '',
-        image: c.image ?? '',
-        answer_image: c.answer_image ?? '',
-        url: (c.url ?? '').toString().trim(),
-        category: (c.category ?? c.subject ?? '').toString()
-      };
-    }
-    function uniqCats(deck){return Array.from(new Set(deck.map(c=>c.category).filter(Boolean))).sort();}
-    function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
-
-    function saveHidden(){localStorage.setItem('hiddenIds',JSON.stringify([...hiddenIds]));}
-    function saveProgress(){localStorage.setItem('progress',JSON.stringify(progress));}
-
-    // Build category checkbox list and wire change handler
-    function buildCategoryUI(){
-      catsEl.innerHTML='';
-      categories.forEach(cat=>{
-        const row=document.createElement('label');row.className='checkboxline';
-        row.innerHTML=`<input type="checkbox" data-cat="${cat}" checked><span>${cat}</span>`;
-        catsEl.appendChild(row);
-      });
-      selectedCats=new Set(categories);
-      catsEl.onchange=e=>{
-        if(e.target.matches('input[data-cat]')){
-          const cat=e.target.getAttribute('data-cat');
-          if(e.target.checked) selectedCats.add(cat); else selectedCats.delete(cat);
-          refilter(); render();
+        function normCard(c,i){
+            return {
+                id: c.id ?? i,
+                q:  c.question ?? c.q ?? '',
+                a:  c.answer ?? c.a ?? '',
+                image: c.image ?? '',
+                answer_image: c.answer_image ?? '',
+                url: (c.url ?? '').toString().trim(),
+                category: (c.category ?? c.subject ?? '').toString()
+            };
         }
-      };
-    }
+        function uniqCats(deck){return Array.from(new Set(deck.map(c=>c.category).filter(Boolean))).sort();}
+        function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
 
-    // Rebuild filtered deck using selectedCats, hiddenIds, and showMissedOnly
-    function refilter(){
-      filtered = fullDeck.filter(c=>{
-        const id = String(c.id);
-        const inCategory = (!c.category || selectedCats.has(c.category));
-        const notHidden = !hiddenIds.has(id);
-        const isMissed = progress.seen[id] && !progress.ok[id];
-        return inCategory && notHidden && (!showMissedOnly || isMissed);
-      });
-      if(idx>=filtered.length) idx=0;
-      updateStats();
-    }
+        function saveHidden(){localStorage.setItem('hiddenIds',JSON.stringify([...hiddenIds]));}
+        function saveProgress(){localStorage.setItem('progress',JSON.stringify(progress));}
 
-    // Recompute stats for current filtered deck and update UI
-    function updateStats(){
-      let seen=0,ok=0;
-      filtered.forEach(c=>{
-        const id=String(c.id);
-        if(progress.seen[id])seen++;
-        if(progress.ok[id])ok++;
-      });
-      const wrong = Math.max(seen - ok, 0);
-      sSeen.textContent=seen; sOk.textContent=ok; sWrong.textContent=wrong;
-      sAcc.textContent=seen?Math.round((ok/seen)*100)+'%':'0%';
-    }
+        // Build category checkbox list and wire change handler
+        function buildCategoryUI(){
+            catsEl.innerHTML='';
+            categories.forEach(cat=>{
+                const row=document.createElement('label');row.className='checkboxline';
+                row.innerHTML=`<input type="checkbox" data-cat="${cat}" checked><span>${cat}</span>`;
+                catsEl.appendChild(row);
+            });
+            selectedCats=new Set(categories);
+            catsEl.onchange=e=>{
+                if(e.target.matches('input[data-cat]')){
+                    const cat=e.target.getAttribute('data-cat');
+                    if(e.target.checked) selectedCats.add(cat); else selectedCats.delete(cat);
+                    refilter(); render();
+                }
+            };
+        }
 
-    // Validate that a URL is http(s)
-    function isHttpUrl(u){return /^https?:\/\//i.test(u);}
+        // Rebuild filtered deck using selectedCats, hiddenIds, and showMissedOnly
+        function refilter(){
+            filtered = fullDeck.filter(c=>{
+                const id = String(c.id);
+                const inCategory = (!c.category || selectedCats.has(c.category));
+                const notHidden = !hiddenIds.has(id);
+                const isMissed = progress.seen[id] && !progress.ok[id];
+                return inCategory && notHidden && (!showMissedOnly || isMissed);
+            });
+            if(idx>=filtered.length) idx=0;
+            updateStats();
+        }
 
-    // Reset the answer area and 'Show Answer' button state
-    function resetAnswerHiddenUI(){
-      isAnswerVisible = false;
-      ansEl.style.display='none';
-      aImgBox.style.display='none';
-      aImg.removeAttribute('src'); aImg.removeAttribute('alt');
-      ansWrap.style.display='none';
-      showBtn.textContent='Show Answer';
-      showBtn.classList.add('primary');
-      showBtn.classList.remove('hidebtn');
-    }
+        // Recompute stats for current filtered deck and update UI
+        function updateStats(){
+            let seen=0,ok=0;
+            filtered.forEach(c=>{
+                const id=String(c.id);
+                if(progress.seen[id])seen++;
+                if(progress.ok[id])ok++;
+            });
+            const wrong = Math.max(seen - ok, 0);
+            sSeen.textContent=seen; sOk.textContent=ok; sWrong.textContent=wrong;
+            sAcc.textContent=seen?Math.round((ok/seen)*100)+'%':'0%';
+        }
 
-    // Render current card
-function render(){
-  if(!filtered.length){
-    qText.textContent = showMissedOnly
-      ? "No missed cards match the current filters."
-      : "No cards match filters.";
-    qImgBox.style.display='none';
-    resetAnswerHiddenUI();
-    posEl.textContent=''; 
-    footCat.textContent='';
-    prevBtn.style.display='none';
-    nextBtn.style.display='none';
+        // Validate that a URL is http(s)
+        function isHttpUrl(u){return /^https?:\/\//i.test(u);}
 
-    // Keep the row visible so the Show Missed button is still clickable
-    linkRow.style.display = '';
+        // Reset the answer area and 'Show Answer' button state
+        function resetAnswerHiddenUI(){
+            isAnswerVisible = false;
+            ansEl.style.display='none';
+            aImgBox.style.display='none';
+            aImg.removeAttribute('src'); aImg.removeAttribute('alt');
+            ansWrap.style.display='none';
+            showBtn.textContent='Show Answer';
+            showBtn.classList.add('primary');
+            showBtn.classList.remove('hidebtn');
+        }
 
-    return;
-  }
-      const c=filtered[idx];
-      qText.textContent = c.q || '';
+        // Render current card
+        function render(){
+            if(!filtered.length){
+                qText.textContent = showMissedOnly
+                    ? "No missed cards match the current filters."
+                    : "No cards match filters.";
+                qImgBox.style.display='none';
+                resetAnswerHiddenUI();
+                posEl.textContent='';
+                footCat.textContent='';
+                prevBtn.style.display='none';
+                nextBtn.style.display='none';
 
-      if (c.image){
-        qImg.src = c.image;
-        qImg.alt = c.q ? `Front image — ${c.q}` : 'Front image';
-        qImgBox.style.display = 'block';
-      } else {
-        qImgBox.style.display='none';
-        qImg.removeAttribute('src'); qImg.removeAttribute('alt');
-      }
+                // Keep the row visible so the Show Missed button is still clickable
+                linkRow.style.display = '';
 
-      // Link visibility and Show Missed row
-      if (c.url && isHttpUrl(c.url)){
-        qUrl.href = c.url;
-        qUrl.textContent = 'Adtnl Rsrcs';
-        qUrl.style.display = 'inline-flex';
-      } else {
-        qUrl.removeAttribute('href');
-        qUrl.style.display = 'none';
-      }
-      linkRow.style.display = '';
+                return;
+            }
+            const c=filtered[idx];
+            qText.textContent = c.q || '';
 
-      resetAnswerHiddenUI();
-      footCat.textContent=c.category?`Category: ${c.category}`:'Category: —';
-      posEl.textContent=`Card ${idx+1} of ${filtered.length}`;
+            if (c.image){
+                qImg.src = c.image;
+                qImg.alt = c.q ? `Front image — ${c.q}` : 'Front image';
+                qImgBox.style.display = 'block';
+            } else {
+                qImgBox.style.display='none';
+                qImg.removeAttribute('src'); qImg.removeAttribute('alt');
+            }
 
-      prevBtn.style.display = idx===0 ? 'none' : '';
-      nextBtn.style.display = idx===filtered.length-1 ? 'none' : '';
-    }
+            // Link visibility and Show Missed row
+            if (c.url && isHttpUrl(c.url)){
+                qUrl.href = c.url;
+                qUrl.textContent = 'Adtnl Rsrcs';
+                qUrl.style.display = 'inline-flex';
+            } else {
+                qUrl.removeAttribute('href');
+                qUrl.style.display = 'none';
+            }
+            linkRow.style.display = '';
 
-    // Show/Hide Answer toggle
-    showBtn.onclick = () => {
-      if (!filtered.length) return;
+            resetAnswerHiddenUI();
+            footCat.textContent=c.category?`Category: ${c.category}`:'Category: —';
+            posEl.textContent=`Card ${idx+1} of ${filtered.length}`;
 
-      if (isAnswerVisible) {
-        resetAnswerHiddenUI();
-        return;
-      }
+            prevBtn.style.display = idx===0 ? 'none' : '';
+            nextBtn.style.display = idx===filtered.length-1 ? 'none' : '';
+        }
 
-      const c = filtered[idx];
-      let anything = false;
+        // Show/Hide Answer toggle
+        showBtn.onclick = () => {
+            if (!filtered.length) return;
 
-      if (c.a){
-        ansEl.textContent = c.a;
-        ansEl.style.display = 'block';
-        ansWrap.style.display = 'flex';
-        anything = true;
-      }
-      if (c.answer_image){
-        aImg.src = c.answer_image;
-        aImg.alt = c.q ? `Back image — ${c.q}` : 'Back image';
-        aImgBox.style.display = 'block';
-        ansWrap.style.display = 'flex';
-        anything = true;
-      }
-      if (!anything){
-        ansWrap.style.display = 'flex';
-        ansEl.style.display = 'block';
-        ansEl.textContent = '(No answer provided)';
-      }
+            if (isAnswerVisible) {
+                resetAnswerHiddenUI();
+                return;
+            }
 
-      isAnswerVisible = true;
-      showBtn.textContent = 'Hide Answer';
-      showBtn.classList.add('hidebtn');
-      showBtn.classList.remove('primary');
-    };
+            const c = filtered[idx];
+            let anything = false;
 
-    // Show Missed toggle
-    showMissedBtn.onclick = () => {
-      showMissedOnly = !showMissedOnly;
-      if (showMissedOnly){
-        showMissedBtn.classList.add('active');
-        showMissedBtn.textContent = 'Show All';
-        statusEl.textContent = 'Showing missed cards only.';
-      } else {
-        showMissedBtn.classList.remove('active');
-        showMissedBtn.textContent = 'Show Missed';
-        statusEl.textContent = 'Showing all cards.';
-      }
-      refilter();
-      render();
-    };
+            if (c.a){
+                ansEl.textContent = c.a;
+                ansEl.style.display = 'block';
+                ansWrap.style.display = 'flex';
+                anything = true;
+            }
+            if (c.answer_image){
+                aImg.src = c.answer_image;
+                aImg.alt = c.q ? `Back image — ${c.q}` : 'Back image';
+                aImgBox.style.display = 'block';
+                ansWrap.style.display = 'flex';
+                anything = true;
+            }
+            if (!anything){
+                ansWrap.style.display = 'flex';
+                ansEl.style.display = 'block';
+                ansEl.textContent = '(No answer provided)';
+            }
 
-    // Navigation & grading handlers
-    nextBtn.onclick=()=>{if(filtered.length){idx=Math.min(idx+1, filtered.length-1);render();}};
-    prevBtn.onclick=()=>{if(filtered.length){idx=Math.max(idx-1, 0);render();}};
+            isAnswerVisible = true;
+            showBtn.textContent = 'Hide Answer';
+            showBtn.classList.add('hidebtn');
+            showBtn.classList.remove('primary');
+        };
 
-    document.getElementById('correct').onclick=()=>{
-      if(!filtered.length) return;
-      const id=String(filtered[idx].id);
-      progress.ok[id]=true;
-      progress.seen[id]=true;
-      saveProgress();
-      updateStats();
-      nextBtn.click();
-    };
+        // Show Missed toggle
+        showMissedBtn.onclick = () => {
+            showMissedOnly = !showMissedOnly;
+            if (showMissedOnly){
+                showMissedBtn.classList.add('active');
+                showMissedBtn.textContent = 'Show All';
+                statusEl.textContent = 'Showing missed cards only.';
+            } else {
+                showMissedBtn.classList.remove('active');
+                showMissedBtn.textContent = 'Show Missed';
+                statusEl.textContent = 'Showing all cards.';
+            }
+            refilter();
+            render();
+        };
 
-    document.getElementById('wrong').onclick=()=>{
-      if(!filtered.length) return;
-      const id=String(filtered[idx].id);
-      delete progress.ok[id];
-      progress.seen[id]=true;
-      saveProgress();
-      updateStats();
-      nextBtn.click();
-    };
+        // Navigation & grading handlers
+        nextBtn.onclick=()=>{if(filtered.length){idx=Math.min(idx+1, filtered.length-1);render();}};
+        prevBtn.onclick=()=>{if(filtered.length){idx=Math.max(idx-1, 0);render();}};
 
-    // Hide Card button
-    hideBtn.onclick=()=>{
-      if(!filtered.length) return;
-      const id=String(filtered[idx].id);
-      hiddenIds.add(id);
-      saveHidden();
-      statusEl.textContent='Card hidden.';
-      refilter();
-      if(filtered.length){
-        idx=Math.min(idx, filtered.length-1);
-        render();
-      }else{
-        render();
-      }
-    };
+        document.getElementById('correct').onclick=()=>{
+            if(!filtered.length) return;
+            const id=String(filtered[idx].id);
+            progress.ok[id]=true;
+            progress.seen[id]=true;
+            saveProgress();
+            updateStats();
+            nextBtn.click();
+        };
 
-    // Session controls
-    document.getElementById('restart').onclick=()=>{
-      progress={ok:{},seen:{}}; saveProgress();
-      hiddenIds=new Set(); saveHidden();
-      shuffle(fullDeck); refilter(); idx=0; render();
-      statusEl.textContent='Session restarted.';
-    };
-    document.getElementById('unhide').onclick=()=>{
-      hiddenIds=new Set(); saveHidden(); refilter(); render();
-      statusEl.textContent='All hidden cards are now visible.';
-    };
+        document.getElementById('wrong').onclick=()=>{
+            if(!filtered.length) return;
+            const id=String(filtered[idx].id);
+            delete progress.ok[id];
+            progress.seen[id]=true;
+            saveProgress();
+            updateStats();
+            nextBtn.click();
+        };
 
-    // Boot
-    (async function boot(){
-      statusEl.textContent='Loading deck…';
-      try{
-        const res=await fetch('/api/cards',{cache:'no-store'});
-        const data=await res.json();
-        fullDeck=(Array.isArray(data)?data:data.cards||[]).map(normCard);
-        if(!fullDeck.length) throw new Error('No cards in cards.json');
-        categories=uniqCats(fullDeck); buildCategoryUI();
-        refilter(); idx=0; render();
-        statusEl.textContent=`Loaded ${fullDeck.length} cards.`;
-      }catch(e){
-        statusEl.textContent='Failed to load cards: '+e.message;
-        qText.textContent='Loading failed.';
-      }
-    })();
-  </script>
+        // Hide Card button
+        hideBtn.onclick=()=>{
+            if(!filtered.length) return;
+            const id=String(filtered[idx].id);
+            hiddenIds.add(id);
+            saveHidden();
+            statusEl.textContent='Card hidden.';
+            refilter();
+            if(filtered.length){
+                idx=Math.min(idx, filtered.length-1);
+                render();
+            }else{
+                render();
+            }
+        };
+
+        // Session controls
+        document.getElementById('restart').onclick=()=>{
+            progress={ok:{},seen:{}}; saveProgress();
+            hiddenIds=new Set(); saveHidden();
+            shuffle(fullDeck); refilter(); idx=0; render();
+            statusEl.textContent='Session restarted.';
+        };
+        document.getElementById('unhide').onclick=()=>{
+            hiddenIds=new Set(); saveHidden(); refilter(); render();
+            statusEl.textContent='All hidden cards are now visible.';
+        };
+
+        // Boot
+        (async function boot(){
+            statusEl.textContent='Loading deck…';
+            try{
+                const res=await fetch('/api/cards',{cache:'no-store'});
+                const data=await res.json();
+                fullDeck=(Array.isArray(data)?data:data.cards||[]).map(normCard);
+                if(!fullDeck.length) throw new Error('No cards in cards.json');
+                categories=uniqCats(fullDeck); buildCategoryUI();
+                refilter(); idx=0; render();
+                statusEl.textContent=`Loaded ${fullDeck.length} cards.`;
+            }catch(e){
+                statusEl.textContent='Failed to load cards: '+e.message;
+                qText.textContent='Loading failed.';
+            }
+        })();
+    </script>
 </body>
 </html>
