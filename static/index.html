@@ -56,7 +56,7 @@
            padding:12px;
            display:flex;
            flex-direction:column;
-           }
+        }
 
         /* Right panel: flashcard viewport */
         .right{
@@ -64,10 +64,22 @@
            min-height:240px;    /* shorter card panel; safe for future mobile tweaks */
            display:flex;
            flex-direction:column;
-           }
+        }
 
         /* Muted caption text utility */
         .muted{color:var(--muted); font-size:13px}
+        .small{font-size:12px}
+
+        /* Top status row above card: Loaded X, Category, Card N of M */
+        .topstatus{
+            display:flex;
+            flex-direction:row;
+            align-items:baseline;
+            justify-content:space-between;
+            gap:16px;
+            margin-bottom:8px;
+            white-space:nowrap;   /* keep all three on one line to save vertical space */
+        }
 
         /* Section heading label */
         .sectionTitle{font-weight:700; margin:6px 0 10px}
@@ -80,18 +92,18 @@
             max-height:40vh;
             overflow:auto;
             padding-right:6px;
-            }
+        }
 
         .checkboxline{
             display:flex;
             gap:6px;
             align-items:center
-            }
+        }
 
         .checkboxline span{
             font-size:13px;
             line-height:1.15
-            }
+        }
 
         /* Stats chip row */
         .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
@@ -99,14 +111,14 @@
             background:#eef3ff; color:#0b2c5a;
             border:1px solid #cfe0ff;
             border-radius:999px; padding:6px 10px; font-size:12px
-            }
+        }
 
         /* Buttons: slightly smaller & narrower, ALL with black outline */
         .btnrow{display:flex; gap:10px; flex-wrap:wrap}
         button{
             padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
             cursor:pointer; text-transform:capitalize; border:2px solid #000;
-            }
+        }
 
         /* Button color variants */
         button.primary{background:var(--accent); color:#fff;}
@@ -152,7 +164,7 @@
             flex:1;
             border:1px solid #e3e8ef;
             border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
-            }
+        }
 
         .q{font-size:20px; font-weight:700}
 
@@ -177,7 +189,6 @@
             white-space:pre-wrap;
         }
 
-        .small{font-size:12px}
         .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
 
         /* Link row for optional external resource */
@@ -244,9 +255,9 @@
             <div class="muted small">Stats valid for checked categories and visible cards.</div>
         </div>
 
-
         <!-- RIGHT: study area -->
         <div class="panel right">
+            <!-- Single compact row: Loaded X cards | Category: Y | Card N of M -->
             <div class="topstatus small">
                 <div id="status" class="muted">Loading deck…</div>
                 <div id="footcat" class="muted"></div>
