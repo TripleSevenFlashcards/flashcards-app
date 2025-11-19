@@ -129,7 +129,12 @@
             cursor:pointer;
             text-transform:capitalize;
             border:2px solid #000;
+            display:inline-flex;
+            align-items:center;      /* vertical centering */
+            justify-content:center;  /* horizontal centering */
+            line-height:1;           /* remove extra vertical slack */
             }
+
 
         /* Defines the individual button layouts depending on the button */
         button.primary{background:var(--accent); color:#fff;}
@@ -219,6 +224,7 @@
             text-decoration:none;
             position:relative;
             top:4px;
+            line-height:1;
             }
 
         .extlink:hover{
