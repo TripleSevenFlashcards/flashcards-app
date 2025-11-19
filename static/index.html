@@ -68,13 +68,30 @@
 
         /* Muted caption text utility */
         .muted{color:var(--muted); font-size:13px}
+
         /* Section heading label */
         .sectionTitle{font-weight:700; margin:6px 0 10px}
 
         /* Category checklist container */
-        .catlist{display:flex; flex-direction:column; gap:4px; max-height:40vh; overflow:auto; padding-right:6px}
-        .checkboxline{display:flex; gap:6px; align-items:center}
-        .checkboxline span{font-size:13px; line-height:1.15}
+        .catlist{
+            display:grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap:4px 10px;          /* row gap, column gap */
+            max-height:40vh;
+            overflow:auto;
+            padding-right:6px;
+            }
+
+        .checkboxline{
+            display:flex;
+            gap:6px;
+            align-items:center
+            }
+
+        .checkboxline span{
+            font-size:13px;
+            line-height:1.15
+            }
 
         /* Stats chip row */
         .statline{display:flex; gap:10px; margin:8px 0 12px; flex-wrap:wrap}
@@ -82,29 +99,35 @@
             background:#eef3ff; color:#0b2c5a;
             border:1px solid #cfe0ff;
             border-radius:999px; padding:6px 10px; font-size:12px
-        }
+            }
 
         /* Buttons: slightly smaller & narrower, ALL with black outline */
         .btnrow{display:flex; gap:10px; flex-wrap:wrap}
         button{
             padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
             cursor:pointer; text-transform:capitalize; border:2px solid #000;
-        }
+            }
+
         /* Button color variants */
         button.primary{background:var(--accent); color:#fff;}
         button.primary:hover{filter:brightness(0.50);}
+
         button.ok{background:var(--ok); color:#fff;}
         button.ok:hover{filter:brightness(0.50);}
+
         button.bad{background:#ffcccc; color:#000;}
         button.bad:hover{background:#b02a37; color:#fff;}
+
         button.next{background:var(--next); color:#fff;}
         button.next:hover{filter:brightness(0.50);}
+
         button.restart{background:#b02a37; color:#fff;}
         button.restart:hover{filter:brightness(.50);}
+
         button.unhide{background:#1b8a3a; color:#fff;}
         button.unhide:hover{filter:brightness(.50);}
 
-        /* Hide Card */
+        /* Hide Card Button*/
         button.hidecard{background:#435663; color:#fff;}
         button.hidecard:hover{filter:brightness(.50);}
 
@@ -124,12 +147,13 @@
             background:#ffb347;
         }
 
-        /* Card container (question, answer, controls, footer) */
+        /* Right Hand container (question, answer, controls, footer) */
         #card{
             flex:1;
             border:1px solid #e3e8ef;
             border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px
-        }
+            }
+
         .q{font-size:20px; font-weight:700}
 
         /* Box that holds the flashcard image */
