@@ -182,7 +182,7 @@
             width:6in; height:auto; max-width:100%;
             background:#f6f8fb; border:2px solid #000000;
             border-radius:10px; display:none; overflow:hidden; margin-top:8px;
-        }
+            }
 
         /* Controls the layout of the card itself when displayed */
         .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
@@ -196,7 +196,7 @@
             border-radius:10px;
             padding:14px;
             white-space:pre-wrap;
-        }
+            }
 
         .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
 
@@ -218,10 +218,11 @@
             text-decoration:none;
             position:relative;
             top:4px;
-        }
+            }
+
         .extlink:hover{
             filter:brightness(0.95);
-        }
+            }
 
         /* Answer wrapper (text + image), hidden by default */
         .answrap{display:none; flex-direction:column; gap:10px;}
@@ -264,9 +265,9 @@
             </div>
             <div class="muted small">Stats valid for checked categories and visible cards.</div>
 
-            <!-- Moved here from right panel: Adtnl Rsrcs + Show Missed -->
+            <!-- Moved here from right panel: Additional Learning+ Show Missed -->
             <div class="linkrow" id="linkrow" style="margin-top:8px; display:none">
-                <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
+                <a id="qurl" class="extlink" target="_blank" rel="noopener">Additional Learning</a>
                 <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
             </div>
         </div>
@@ -452,7 +453,7 @@
             // Link visibility and Show Missed row
             if (c.url && isHttpUrl(c.url)){
                 qUrl.href = c.url;
-                qUrl.textContent = 'Adtnl Rsrcs';
+                qUrl.textContent = 'Additional Learning';
                 qUrl.style.display = 'inline-flex';
             } else {
                 qUrl.removeAttribute('href');
