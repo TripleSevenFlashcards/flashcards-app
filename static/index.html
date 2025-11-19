@@ -267,7 +267,7 @@
 
             <!-- Moved here from right panel: Adtnl Rsrcs + Show Missed -->
             <div class="linkrow" id="linkrow" style="margin-top:8px; display:none">
-                <a id="qurl" class="extlink" target="_blank" rel="noopener">Adtnl Rsrcs</a>
+                <a id="qurl" class="extlink" target="_blank" rel="noopener">Addt'l Rsrcs</a>
                 <button id="showMissedBtn" class="showmissed" type="button" title="Show only cards you missed.">Show Missed</button>
             </div>
         </div>
@@ -453,7 +453,7 @@
             // Link visibility and Show Missed row
             if (c.url && isHttpUrl(c.url)){
                 qUrl.href = c.url;
-                qUrl.textContent = 'Adtnl Rsrcs';
+                qUrl.textContent = "Addt'l Rsrcs";
                 qUrl.style.display = 'inline-flex';
             } else {
                 qUrl.removeAttribute('href');
