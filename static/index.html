@@ -19,7 +19,7 @@
             color:#fff; display:flex; flex-direction:column; align-items:center;
         }
 
-        /* Tight top bar (logo + brand) */
+        /* Tight top bar (logo + brand + logout) */
         .topbar{
             width:100%;
             max-width:900px;              /* match .wrap's max-width */
@@ -27,6 +27,18 @@
             align-items:center;
             gap:10px;
             padding:12px 16px 12px 28px;  /* 16 (wrap) + 12 (panel) */
+            justify-content:space-between;
+        }
+
+        .topbar-left{
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+
+        .topbar-right{
+            display:flex;
+            align-items:center;
         }
 
         .logo{height:36px}
@@ -115,10 +127,10 @@
 
         /* Defines the layout of the button row, not the buttons themselves */
         .btnrow{
-	    display:flex;
+	        display:flex;
             gap:10px;
             flex-wrap:wrap
-            }
+        }
 
         /* Defines the overall layout of the buttons themselves */
         button{
@@ -133,8 +145,7 @@
             align-items:center;      /* vertical centering */
             justify-content:center;  /* horizontal centering */
             line-height:1;           /* remove extra vertical slack */
-            }
-
+        }
 
         /* Defines the individual button layouts depending on the button */
         button.primary{background:var(--accent); color:#fff;}
@@ -159,6 +170,13 @@
         button.hidecard{background:#435663; color:#fff;}
         button.hidecard:hover{filter:brightness(.50);}
 
+        /* Logout button */
+        button.logout{
+            background:#435663;
+            color:#fff;
+        }
+        button.logout:hover{filter:brightness(.50);}
+
         /* Show Missed toggle button */
         button.showmissed{
             background:#ffe08a;
@@ -168,11 +186,11 @@
             justify-content:center;
             position:relative;
             top:4px;
-            }
+        }
 
         button.showmissed.active{
             background:#ffb347;
-            }
+        }
 
         button.showmissed:hover{filter:brightness(.50);}
 
@@ -186,14 +204,14 @@
         .q{
             font-size:14px;
             font-weight:700
-            }
+        }
 
         /* Box that holds the flashcard image */
         .imgbox{
             width:6in; height:auto; max-width:100%;
             background:#f6f8fb; border:2px solid #000000;
             border-radius:10px; display:none; overflow:hidden; margin-top:8px;
-            }
+        }
 
         /* Controls the layout of the card itself when displayed */
         .imgbox img{width:100%; height:auto; object-fit:contain; display:block;}
@@ -209,7 +227,7 @@
             white-space:pre-wrap;
             font-size:14px;
             font-weight:700
-            }
+        }
 
         .footerline{margin-top:10px; display:flex; gap:10px; align-items:center; justify-content:space-between}
 
@@ -232,11 +250,11 @@
             position:relative;
             top:4px;
             line-height:1;
-            }
+        }
 
         .extlink:hover{
             filter:brightness(0.50);
-            }
+        }
 
         /* Answer wrapper (text + image), hidden by default */
         .answrap{display:none; flex-direction:column; gap:10px;}
@@ -246,7 +264,7 @@
             background:#ffd400;
             color:#000;
             border:2px solid #000000; /* was ffd400 */
-            }
+        }
 
         .hidebtn:hover{filter:brightness(.50);}
 
@@ -259,8 +277,13 @@
 <body>
     <!-- Top bar -->
     <div class="topbar">
-        <img class="logo" src="/static/logo.jpg" alt="logo">
-        <div class="brand">Triple Seven Aviation Flashcards</div>
+        <div class="topbar-left">
+            <img class="logo" src="/static/logo.jpg" alt="logo">
+            <div class="brand">Triple Seven Aviation Flashcards</div>
+        </div>
+        <div class="topbar-right">
+            <button class="logout" type="button" onclick="window.location.href='/logout'">Logout</button>
+        </div>
     </div>
 
     <!-- Main grid wrapper (left + right panels) -->
