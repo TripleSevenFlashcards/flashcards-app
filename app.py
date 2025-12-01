@@ -1,19 +1,19 @@
-# app.py — Serve your exact HTML + /logo.jpg + /cards/** with auth + admin user creation
-import os, json, sqlite3, uuid, hashlib
-from datetime import datetime
+# app.py — Public (no login), serve HTML + /logo.jpg + /cards/**
+
+import os
+import json
+import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+
 from flask import (
     Flask,
     request,
     jsonify,
     send_from_directory,
-    g,
-    redirect,
     abort,
     make_response,
-    session,
-    render_template_string,
+    redirect,
 )
 
 ROOT       = Path(__file__).resolve().parent
@@ -21,12 +21,9 @@ STATIC_DIR = ROOT / "static"
 CARDS_DIR  = STATIC_DIR / "cards"
 DATA_DIR   = ROOT / "data"
 CARDS_JSON = DATA_DIR / "cards.json"
-DB_PATH    = os.environ.get("DB_PATH", str(ROOT / "app.db"))
 BUILD_ID   = os.environ.get("BUILD_ID", str(uuid.uuid4())[:8])
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="/static")
-app.secret_key = os.environ.get("FLASK_SECRET", "dev-change-me")  # set in .env on Render
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")  # set this in .env for /admin/create-user
 
 # --- Bootstrap
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
@@ -48,219 +45,32 @@ def _log_req():
         f"Sec-Fetch-Mode={request.headers.get('Sec-Fetch-Mode','')}"
     )
 
-# --- Minimal DB/state support + users
-def get_db():
-    if "db" not in g:
-        g.db = sqlite3.connect(DB_PATH)
-        g.db.row_factory = sqlite3.Row
-    return g.db
-
-@app.teardown_appcontext
-def close_db(exc):
-    db = g.pop("db", None)
-    if db is not None:
-        db.close()
-
-def init_db():
-    db = get_db()
-    # Users table for login
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            is_active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL
-        )
-    """)
-    # Existing tables (unchanged)
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS user_state (
-            user_id TEXT PRIMARY KEY,
-            state_json TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )
-    """)
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS hidden_cards (
-            user_id TEXT NOT NULL,
-            card_id INTEGER NOT NULL,
-            PRIMARY KEY (user_id, card_id)
-        )
-    """)
-    db.commit()
-
-with app.app_context():
-    init_db()
-
-# --- User helpers (hashing, lookup, creation)
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
-def verify_password(password: str, password_hash: str) -> bool:
-    return hash_password(password) == password_hash
-
-def find_user_by_email(email: str) -> Optional[sqlite3.Row]:
-    db = get_db()
-    cur = db.execute(
-        "SELECT * FROM users WHERE email = ? AND is_active = 1",
-        (email.strip().lower(),),
-    )
-    return cur.fetchone()
-
-def create_user(email: str, raw_password: str) -> int:
-    email_norm = email.strip().lower()
-    if not email_norm:
-        raise ValueError("email is required")
-    if not raw_password:
-        raise ValueError("password is required")
-
-    db = get_db()
-    cur = db.execute(
-        """
-        INSERT INTO users (email, password_hash, is_active, created_at)
-        VALUES (?, ?, 1, ?)
-        """,
-        (email_norm, hash_password(raw_password), datetime.utcnow().isoformat()),
-    )
-    db.commit()
-    return cur.lastrowid
-
-# --- Simple HTML login page
-LOGIN_HTML = """
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Private Pilot Flashcards – Login</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-      body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        padding: 2rem;
-        background: #f5f5f5;
-      }
-      .card {
-        max-width: 400px;
-        margin: 3rem auto;
-        background: #ffffff;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,.1);
-      }
-      label {
-        display: block;
-        margin-top: 1rem;
-      }
-      input {
-        width: 100%;
-        padding: 0.5rem;
-        margin-top: 0.25rem;
-        box-sizing: border-box;
-      }
-      button {
-        margin-top: 1.5rem;
-        padding: 0.6rem 1.2rem;
-        cursor: pointer;
-      }
-      .error {
-        color: #c00;
-        margin-top: 0.5rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <h1>Sign in</h1>
-      <p>Enter the email and password you received after purchase.</p>
-      {% if error %}
-        <div class="error">{{ error }}</div>
-      {% endif %}
-      <form method="post">
-        <label>Email
-          <input type="email" name="email" value="{{ email or '' }}" required>
-        </label>
-        <label>Password
-          <input type="password" name="password" required>
-        </label>
-        <button type="submit">Sign in</button>
-      </form>
-    </div>
-  </body>
-</html>
-"""
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = (request.form.get("email") or "").strip().lower()
-        password = request.form.get("password") or ""
-        user = find_user_by_email(email)
-        if not user or not verify_password(password, user["password_hash"]):
-            return (
-                render_template_string(
-                    LOGIN_HTML,
-                    error="Invalid email or password",
-                    email=email,
-                ),
-                401,
-            )
-        session["user_id"] = int(user["id"])
-        session["user_email"] = user["email"]
-        return redirect("/")
-    # GET
-    if session.get("user_id"):
-        return redirect("/")
-    return render_template_string(LOGIN_HTML, error=None, email="")
-
-@app.route("/logout", methods=["GET", "POST"])
-def logout():
-    session.clear()
-    return redirect("/login")
-
-# --- Auth guard: protect UI + API unless logged in
-@app.before_request
-def require_login():
-    path = request.path
-
-    # Open paths that don't need user login
-    if (
-        path.startswith("/static/")
-        or path == "/login"
-        or path == "/logout"
-        or path == "/logo.jpg"
-        or path == "/admin/create-user"
-    ):
-        return None
-
-    # If already logged in, allow
-    if session.get("user_id"):
-        return None
-
-    # Block API + card image access for not-logged-in users
-    if path.startswith("/api/") or path.startswith("/cards/"):
-        return jsonify({"error": "Unauthorized"}), 401
-
-    # Everything else (/, client routes) -> go to login
-    return redirect("/login")
-
 # --- Cards loader
 _cards_cache: Optional[List[Dict[str, Any]]] = None
+
 def load_cards() -> List[Dict[str, Any]]:
     global _cards_cache
     if _cards_cache is not None:
         return _cards_cache
+
     if not CARDS_JSON.exists():
         _cards_cache = [{
-            "id": 999, "category": "Demo", "question": "Demo Q",
-            "image": "/cards/demo_front.jpg", "answer": "Demo A",
-            "answer_image": "/cards/demo_back.jpg", "url": ""
+            "id": 999,
+            "category": "Demo",
+            "question": "Demo Q",
+            "image": "/cards/demo_front.jpg",
+            "answer": "Demo A",
+            "answer_image": "/cards/demo_back.jpg",
+            "url": ""
         }]
         return _cards_cache
+
     with CARDS_JSON.open("r", encoding="utf-8") as f:
         data = json.load(f)
+
     if not isinstance(data, list):
         raise ValueError("cards.json must be a list")
+
     for c in data:
         c.setdefault("id", None)
         c.setdefault("category", "")
@@ -269,10 +79,12 @@ def load_cards() -> List[Dict[str, Any]]:
         c.setdefault("answer", "")
         c.setdefault("answer_image", "")
         c.setdefault("url", "")
+
     _cards_cache = data
     return _cards_cache
 
 # --- Routes to serve your assets exactly as referenced by your HTML
+
 @app.route("/logo.jpg")
 def serve_logo():
     # Your HTML uses /logo.jpg at the root; serve static/logo.jpg here.
@@ -289,6 +101,7 @@ def serve_card_file(filename):
     return send_from_directory(str(CARDS_DIR), filename)
 
 # --- UI (shell HTML) with no-cache so updates show immediately
+
 @app.route("/")
 def index():
     resp = make_response(send_from_directory(app.static_folder, "index.html"))
@@ -307,6 +120,7 @@ def spa_fallback(maybe_client_route):
     return jsonify({"error": "Not found"}), 404
 
 # --- API (your HTML uses only /api/cards)
+
 @app.route("/api/cards", methods=["GET"])
 def api_get_cards():
     # If someone navigates here in the address bar, bounce back to UI.
@@ -317,13 +131,23 @@ def api_get_cards():
     categories_param = request.args.get("categories", "").strip()
     if categories_param:
         wanted = {c for c in categories_param.split(",") if c}
-        cards = [c for c in cards if str(c.get("category","")).strip() in wanted]
+        cards = [
+            c for c in cards
+            if str(c.get("category", "")).strip() in wanted
+        ]
     return jsonify(cards)
 
-# Optional endpoints left in place (unused by your HTML)
+# Optional endpoints kept as harmless stubs
 @app.route("/api/state", methods=["GET"])
 def api_get_state():
-    return jsonify({"current_index":0,"correct":0,"incorrect":0,"seen":0,"deck_order":[],"category_filters":[]})
+    return jsonify({
+        "current_index": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "seen": 0,
+        "deck_order": [],
+        "category_filters": []
+    })
 
 @app.route("/api/state", methods=["POST"])
 def api_set_state():
@@ -344,37 +168,15 @@ def api_unhide_all():
 @app.route("/api/categories", methods=["GET"])
 def api_categories():
     cards = load_cards()
-    cats = sorted({str(c.get("category", "")).strip() for c in cards if str(c.get("category", "")).strip()})
+    cats = sorted({
+        str(c.get("category", "")).strip()
+        for c in cards
+        if str(c.get("category", "")).strip()
+    })
     return jsonify(cats)
 
-# --- Admin endpoint: create user via secret token
-@app.post("/admin/create-user")
-def admin_create_user():
-    if not ADMIN_TOKEN:
-        # Misconfigured; don't allow use without a token
-        abort(403)
-
-    token = request.headers.get("X-Admin-Token")
-    if token != ADMIN_TOKEN:
-        abort(403)
-
-    data = request.get_json(silent=True) or {}
-    email = (data.get("email") or "").strip()
-    password = (data.get("password") or "").strip()
-
-    if not email or not password:
-        return jsonify({"error": "email and password are required"}), 400
-
-    try:
-        user_id = create_user(email, password)
-    except sqlite3.IntegrityError:
-        return jsonify({"error": "email already exists"}), 400
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-
-    return jsonify({"status": "ok", "user_id": user_id})
-
 # --- Entrypoint
+
 if __name__ == "__main__":
     host = os.environ.get("FLASK_HOST", "127.0.0.1")
     port = int(os.environ.get("FLASK_PORT", "5000"))
